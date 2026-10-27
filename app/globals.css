@@ -63,3 +63,12 @@ body,.exchange-app{background:radial-gradient(ellipse at 15% 0%,rgba(0,214,112,.
 .overview-shortcuts button small{font-size:11px;color:var(--muted)}
 .overview-dashboard .feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:760px){.overview-dashboard{padding:16px;gap:15px}.overview-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-dashboard .feature-grid{grid-template-columns:1fr}.overview-total{font-size:32px}.overview-assets{padding:18px!important}}
+
+
+/* Compact top controls for the Overview dashboard */
+.overview-top-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;max-width:1440px;margin:18px auto 0;padding:0 28px}
+.overview-top-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.top-pill{border:1px solid rgba(65,255,159,.2);border-radius:999px;padding:7px 11px;background:rgba(8,35,24,.82);color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.top-pill:hover,.top-pill.selected{border-color:#20f59b;background:rgba(32,245,155,.14);color:#effff6}
+.overview-top-group+.overview-top-group .top-pill{border-radius:7px;padding:7px 9px}
+@media(max-width:760px){.overview-top-actions{align-items:flex-start;flex-direction:column;padding:0 16px;margin-top:14px;gap:8px}.overview-top-group{gap:5px}.top-pill{padding:7px 10px;font-size:10px}.overview-top-group+.overview-top-group .top-pill{padding:7px 8px}}
