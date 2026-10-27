@@ -39,43 +39,13 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let alive = true;
-    async function prepareMfa() {
-      if (!supabase || !user) { setFactorsReady(false); return; }
-      setFactorsReady(false); setVerified(false); setMessage(""); setCode("");
-      try {
-        const { data, error } = await supabase.auth.mfa.listFactors();
-        if (error) throw error;
-        if (!alive) return;
-        const factors = data.totp || [];
-        const active = factors.find(factor => factor.status === "verified");
-        const pending = factors.find(factor => factor.status !== "verified");
-        if (active) {
-          const { data: c, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: active.id });
-          if (challengeError) throw challengeError;
-          if (!alive) return;
-          setChallenge({ factorId: active.id, challengeId: c.id });
-          setSetup(null);
-        } else if (pending) {
-          // Keep the customer's existing enrollment. Do not silently create a new
-          // secret on each login; let them verify the authenticator they already scanned.
-          const { data: c, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: pending.id });
-          if (challengeError) throw challengeError;
-          if (!alive) return;
-          setChallenge({ factorId: pending.id, challengeId: c.id });
-          setSetup(null);
-        } else {
-          const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Grandstone Authenticator" });
-          if (enrollError) throw enrollError;
-          if (!alive) return;
-          setSetup({ id: enrolled.id, qr: enrolled.totp.qr_code, secret: enrolled.totp.secret });
-        }
-      } catch (error) {
-        if (alive) setMessage(error instanceof Error ? error.message : "Could not prepare authenticator security.");
-      } finally { if (alive) setFactorsReady(true); }
-    }
-    prepareMfa();
-    return () => { alive = false; };
+    // MFA verification is temporarily disabled, but email/password
+    // authentication remains required before the dashboard is shown.
+    setFactorsReady(true);
+    setVerified(Boolean(user));
+    setSetup(null);
+    setChallenge(null);
+    setMessage("");
   }, [user?.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
