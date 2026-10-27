@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import WalletAuthProvider from "./WalletAuthProvider";
 
 export const metadata: Metadata = {
   title: "Grandstone Wallet",
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><WalletAuthProvider>{children}</WalletAuthProvider></body>
     </html>
   );
 }
