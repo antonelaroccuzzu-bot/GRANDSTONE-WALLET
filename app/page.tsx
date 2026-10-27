@@ -40,36 +40,26 @@ export default function Home() {
   const total = Number(quantity || 0) * (orderType === "Market" ? last : Number(price || last));
 
   const loadMarket = useCallback(async () => {
-    const hosts = ["https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com"];
-    let lastError: unknown = null;
-    for (const host of hosts) {
-      try {
-        const paths = [
-          "/api/v3/ticker/24hr",
-          "/api/v3/klines?symbol=" + pair + "&interval=" + interval + "&limit=64",
-          "/api/v3/depth?symbol=" + pair + "&limit=10"
-        ];
-        const results = await Promise.all(paths.map(path =>
-          fetch(host + path, { cache: "no-store", signal: AbortSignal.timeout(10000) })
-        ));
-        if (results.some(r => !r.ok)) throw new Error("Market feed returned an error");
-        const data = await Promise.all(results.map(r => r.json()));
-        if (!Array.isArray(data[0]) || !Array.isArray(data[1]) || !Array.isArray(data[2]?.bids)) {
-          throw new Error("Market feed returned invalid data");
-        }
-        setTickers((data[0] as Ticker[]).filter(t => pairs.includes(t.symbol)));
-        setCandles(data[1] as Candle[]);
-        setBook(data[2] as Book);
-        setLive(true);
-        setMarketError("");
-        return;
-      } catch (error) {
-        lastError = error;
+    try {
+      const response = await fetch("/api/market?symbol=" + encodeURIComponent(pair) + "&interval=" + encodeURIComponent(interval), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Market feed unavailable");
+      if (!Array.isArray(data.tickers) || !Array.isArray(data.candles) || !Array.isArray(data.book?.bids)) {
+        throw new Error("Market feed returned invalid data");
       }
+      setTickers((data.tickers as Ticker[]).filter(t => pairs.includes(t.symbol)));
+      setCandles(data.candles as Candle[]);
+      setBook(data.book as Book);
+      setLive(true);
+      setMarketError("");
+    } catch (error) {
+      console.error("Grandstone market request failed:", error);
+      setLive(false);
+      setMarketError(error instanceof Error ? error.message : "Live market feed unavailable. Retrying automatically.");
     }
-    console.error("Grandstone market feed failed on all configured endpoints:", lastError);
-    setLive(false);
-    setMarketError("Live prices could not load from the market provider. Retrying automatically.");
   }, [pair, interval]);
 
   useEffect(() => {
