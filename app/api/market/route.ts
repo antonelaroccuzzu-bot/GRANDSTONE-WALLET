@@ -95,13 +95,33 @@ async function fromCoinbase(symbol: string, interval: string) {
   }
   const last = Number(ticker.price);
   const open = Number(stats.open);
-  const tickers = [{
-    symbol, lastPrice: String(last),
-    priceChangePercent: open ? String(((last - open) / open) * 100) : "0",
-    quoteVolume: String(stats.volume || "0"),
-    highPrice: String(stats.high || last),
-    lowPrice: String(stats.low || last)
-  }];
+  const tickers = await Promise.all(Object.entries(coinbaseProducts).map(async ([marketSymbol, marketProduct]) => {
+    try {
+      if (marketSymbol === symbol) {
+        return {
+          symbol: marketSymbol, lastPrice: String(last),
+          priceChangePercent: open ? String(((last - open) / open) * 100) : "0",
+          quoteVolume: String(stats.volume || "0"),
+          highPrice: String(stats.high || last),
+          lowPrice: String(stats.low || last)
+        };
+      }
+      const marketStats = await getJson("https://api.exchange.coinbase.com/products/" + marketProduct + "/stats");
+      const marketTicker = await getJson("https://api.exchange.coinbase.com/products/" + marketProduct + "/ticker");
+      const marketLast = Number(marketTicker?.price);
+      if (!Number.isFinite(marketLast) || marketLast <= 0) return null;
+      const marketOpen = Number(marketStats?.open);
+      return {
+        symbol: marketSymbol, lastPrice: String(marketLast),
+        priceChangePercent: marketOpen ? String(((marketLast - marketOpen) / marketOpen) * 100) : "0",
+        quoteVolume: String(marketStats?.volume || "0"),
+        highPrice: String(marketStats?.high || marketLast),
+        lowPrice: String(marketStats?.low || marketLast)
+      };
+    } catch {
+      return null;
+    }
+  })).then(rows => rows.filter((row): row is NonNullable<typeof row> => row !== null));
   const candles = candleRows.slice(0, 64).reverse().map((c: number[]) => [
     c[0] * 1000, String(c[3]), String(c[2]), String(c[1]), String(c[4]), String(c[5]),
     c[0] * 1000, String(c[5]), 0, "0", "0", "0"
