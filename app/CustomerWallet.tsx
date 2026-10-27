@@ -10,13 +10,13 @@ export default function CustomerWallet() {
   const address = wallets.find(wallet => wallet.walletClientType === "privy")?.address || wallets[0]?.address;
 
   if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-    return <button className="connect-button" onClick={() => alert("Customer sign-in is not configured yet. Add NEXT_PUBLIC_PRIVY_APP_ID to Vercel, then redeploy.")}>Account setup</button>;
+    return <button className="connect-button customer-auth-button" onClick={() => alert("Customer sign-in is not configured yet. Add NEXT_PUBLIC_PRIVY_APP_ID to Vercel, then redeploy.")}>Account setup</button>;
   }
 
-  if (!ready) return <button className="connect-button" disabled>Loading account…</button>;
+  if (!ready) return <button className="connect-button customer-auth-button" disabled>Loading account…</button>;
 
   if (!authenticated) {
-    return <button className="connect-button" onClick={login}>Sign in / Create account</button>;
+    return <button className="connect-button customer-auth-button" onClick={login}>Sign in / Create account</button>;
   }
 
   return (
