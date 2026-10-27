@@ -31,10 +31,8 @@ export default function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [guardianEnabled, setGuardianEnabled] = useState(true);
   // Wallet connection state only; the app never requests seed phrases or private keys.
-  const [walletAddress, setWalletAddress] = useState("");
-  const [walletBalance, setWalletBalance] = useState("");
-  const [walletChain, setWalletChain] = useState("");
-  const [walletBusy, setWalletBusy] = useState(false);
+  const [depositCoin, setDepositCoin] = useState("BTC");
+  const [depositNetwork, setDepositNetwork] = useState("Bitcoin");
   const activeTicker = tickers.find(t => t.symbol === pair);
   const last = Number(activeTicker?.lastPrice || 0);
   const change = Number(activeTicker?.priceChangePercent || 0);
@@ -119,42 +117,13 @@ export default function Home() {
     { label: "More", icon: Menu }
   ];
   const tell = (s: string) => setNotice(s);
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      tell("No browser wallet was detected. Open Grandstone inside a supported wallet browser or install a compatible EVM wallet. Never enter a recovery phrase into Grandstone.");
-      return;
-    }
-    setWalletBusy(true);
-    try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" }) as string[];
-      if (!accounts?.length) throw new Error("Wallet did not return an account.");
-      const address = accounts[0];
-      const chainId = await window.ethereum.request({ method: "eth_chainId" }) as string;
-      const balanceHex = await window.ethereum.request({ method: "eth_getBalance", params: [address, "latest"] }) as string;
-      const balance = Number(BigInt(balanceHex)) / 1e18;
-      setWalletAddress(address);
-      setWalletBalance(balance.toLocaleString("en-US", { maximumFractionDigits: 6 }));
-      setWalletChain(chainNames[chainId] || ("Chain " + chainId));
-      tell("Wallet connected for public address and balance reads. Transactions still require a separate review and explicit approval in your wallet.");
-    } catch (error) {
-      tell(error instanceof Error ? "Wallet connection failed: " + error.message : "Wallet connection failed. No transaction was sent.");
-    } finally {
-      setWalletBusy(false);
-    }
-  };
-  const disconnectWalletView = () => {
-    setWalletAddress("");
-    setWalletBalance("");
-    setWalletChain("");
-    tell("Grandstone cleared the displayed wallet session. To revoke wallet-site permissions, use your wallet's connected-apps settings.");
-  };
   const submitOrder = () => tell("Order not sent. Public market data is live, but private exchange authentication, order signing and server-side risk checks are not connected. No trade was placed.");
 
   return <main className="exchange-app">
     <header className="exchange-topbar">
       <button className="exchange-brand" onClick={() => setSection("Overview")}><span className="brand-mark"><Coins size={21}/></span><span>GRANDSTONE<small>WALLET & EXCHANGE</small></span></button>
       <nav className="desktop-nav">{nav.map(n => <button key={n.label} className={section === n.label ? "nav-item active" : "nav-item"} onClick={() => setSection(n.label)}>{n.label}</button>)}</nav>
-      <div className="header-tools"><span className={live ? "feed-status online" : "feed-status"}><i/>{live ? "Live market" : "Market offline"}</span><button className="header-icon" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated account.")}><Bell size={18}/></button><button className="connect-button" onClick={walletAddress ? disconnectWalletView : connectWallet} disabled={walletBusy}><Wallet size={16}/> {walletBusy ? "Connecting…" : walletAddress ? walletAddress.slice(0,6) + "…" + walletAddress.slice(-4) : "Connect wallet"}</button><button className="mobile-menu-button" aria-label="Menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu/></button></div>
+      <div className="header-tools"><span className={live ? "feed-status online" : "feed-status"}><i/>{live ? "Live market" : "Market offline"}</span><button className="header-icon" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated account.")}><Bell size={18}/></button><button className="connect-button" onClick={() => setSection("Deposit")}><ArrowDownLeft size={16}/> Deposit</button><button className="mobile-menu-button" aria-label="Menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu/></button></div>
     </header>
     {mobileMenu && <nav className="mobile-nav">{nav.map(n => <button key={n.label} onClick={() => {setSection(n.label);setMobileMenu(false);}}>{n.label}</button>)}</nav>}
     {notice && <div className="exchange-notice" role="status"><ShieldAlert size={18}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss"><X size={16}/></button></div>}
@@ -200,7 +169,7 @@ export default function Home() {
         </div>
       </aside>
     </div> : <section className="feature-page"><div className="feature-title"><span className="eyebrow">GRANDSTONE PLATFORM</span><h1>{section}</h1><p>Your wallet, markets and AI-assisted trading workspace.</p></div>
-      {section === "Overview" && <><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Assets")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">$0.00 <small>USD</small></strong><p>Connect an account to show verified balances. No funds are connected.</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
+      {section === "Overview" && <><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Deposit")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">$0.00 <small>USD</small></strong><p>Connect an account to show verified balances. No funds are connected.</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
         <div className="feature-card" style={{gridColumn:"1 / -1"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
             <div><h2>Live market overview</h2><p>Prices refresh automatically from public market providers. These are market prices, not your wallet balances.</p></div>
@@ -262,7 +231,15 @@ export default function Home() {
               </button>;
             })}
           </div>
-        </div><div className="feature-card"><Wallet/><h2>Self-custody wallet</h2><p>Connect a wallet you control. Grandstone never asks for your recovery phrase or private key.</p>{walletAddress ? <><div className="bot-setting"><span><strong>Connected address</strong><small>{walletAddress}</small></span><span className="disabled-badge">CONNECTED</span></div><div className="bot-setting"><span><strong>Network</strong><small>{walletChain}</small></span><span><strong>{walletBalance}</strong><small>Native coin balance</small></span></div><button onClick={connectWallet}>Refresh wallet balance</button><button onClick={disconnectWalletView}>Disconnect display</button></> : <button onClick={connectWallet} disabled={walletBusy}>{walletBusy ? "Connecting…" : "Connect existing wallet"}</button>}</div><div className="feature-card"><ShieldCheck/><h2>Transaction status</h2><p>Wallet connection enables address and native balance reads only. Sending, swaps, token balances, and transaction history need chain-specific integrations and a confirmation screen before any transaction is signed.</p><div className="bot-setting"><span><strong>Signing authority</strong><small>Your wallet handles transaction approvals.</small></span><span className="disabled-badge">SELF-CUSTODY</span></div></div></div>}
+        </div><div className="feature-card"><ShieldCheck/><h2>Grandstone wallet infrastructure</h2><p>Grandstone will issue its own deposit addresses per customer and supported network. Addresses must be generated and stored by a secure custody/key-management service, not fabricated in the browser.</p><div className="bot-setting"><span><strong>Deposit wallet service</strong><small>Secure address generation and deposit monitoring are not configured yet.</small></span><span className="disabled-badge">NOT LIVE</span></div></div></div>}
+      {section === "Deposit" && <div className="feature-grid"><div className="feature-card" style={{gridColumn:"1 / -1"}}>
+        <div className="feature-title"><span className="eyebrow">GRANDSTONE WALLET</span><h1>Deposit crypto</h1><p>Select the coin and its network. Your Grandstone deposit address should remain assigned to your account for future deposits.</p></div>
+        <label className="field-label">Select cryptocurrency<select value={depositCoin} onChange={e => {setDepositCoin(e.target.value);setDepositNetwork(({BTC:"Bitcoin",ETH:"Ethereum (ERC-20)",SOL:"Solana",BNB:"BNB Smart Chain (BEP-20)",XRP:"XRP Ledger",DOGE:"Dogecoin",ADA:"Cardano",AVAX:"Avalanche C-Chain",TRX:"TRON (TRC-20)",LTC:"Litecoin"} as Record<string,string>)[e.target.value] || "Select network");}} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{["BTC","ETH","SOL","BNB","XRP","DOGE","ADA","AVAX","TRX","LTC","USDT","USDC"].map(coin => <option key={coin} value={coin}>{coin}</option>)}</select></label>
+        <label className="field-label" style={{display:"block",marginTop:14}}>Network<select value={depositNetwork} onChange={e => setDepositNetwork(e.target.value)} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{(({BTC:["Bitcoin"],ETH:["Ethereum (ERC-20)","Arbitrum","Optimism","Base"],SOL:["Solana"],BNB:["BNB Smart Chain (BEP-20)","BNB Beacon Chain"],XRP:["XRP Ledger"],DOGE:["Dogecoin"],ADA:["Cardano"],AVAX:["Avalanche C-Chain"],TRX:["TRON (TRC-20)"],LTC:["Litecoin"],USDT:["Ethereum (ERC-20)","Tron (TRC-20)","Solana","BNB Smart Chain (BEP-20)"],USDC:["Ethereum (ERC-20)","Solana","Base","Arbitrum"]} as Record<string,string[]>)[depositCoin] || ["Select network"]).map(network => <option key={network} value={network}>{network}</option>)}</select></label>
+        <div className="bot-setting" style={{marginTop:18}}><span><strong>Deposit address</strong><small>Address not generated yet</small></span><span className="disabled-badge">SETUP REQUIRED</span></div>
+        <p style={{marginTop:12}}>Your permanent {depositCoin} deposit address will appear here once Grandstone's secure wallet-generation and deposit-monitoring backend is configured. Do not send funds to a placeholder address or use an address from another network.</p>
+        <button onClick={() => tell("No deposit address has been generated and no funds can be received yet. Grandstone needs its secure custody wallet service configured first.")}>Check deposit setup</button>
+      </div></div>}
       {section === "AI Guardian" && <div className="feature-card"><ShieldCheck/><h2>Grandstone AI Trade Guardian</h2><p>Review volatility, order size, concentration, suspicious assets and your strategy rules before confirmation.</p><div className="bot-setting"><span><strong>Pre-trade review</strong><small>Risk rules must be enforced server-side before live orders.</small></span><button className={guardianEnabled ? "toggle on" : "toggle"} onClick={() => setGuardianEnabled(!guardianEnabled)}><i/></button></div><div className="guardian-rule"><ShieldAlert size={18}/><span>When a trade appears risky, Guardian should show the reason and require your Yes/No decision. Hard security and compliance blocks cannot be overridden.</span></div></div>}
       {section === "Trading bots" && <div className="feature-grid"><div className="feature-card"><Bot/><h2>Strategy bot workspace</h2><p>Plan grid, DCA and rule-based strategies with entry conditions, position sizing, take-profit, stop-loss and max-daily-loss limits.</p><div className="bot-setting"><span><strong>Backtesting & paper trading</strong><small>Simulation UI planned; verified historical-data engine not connected.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("Bot execution is disabled until a supported exchange account, server-side risk checks and user authorization are integrated.")}>Review execution status</button></div><div className="feature-card"><Activity/><h2>Risk controls</h2><p>Set per-strategy exposure caps, cooldowns, daily loss limits and Guardian approval before live execution.</p><div className="guardian-rule"><ShieldAlert size={18}/><span>No bot should place real orders until secure provider integration and risk checks pass.</span></div></div></div>}
       {section === "AI Assistant" && <div className="feature-grid"><div className="feature-card"><Zap/><h2>Grandstone AI Assistant</h2><p>Designed to explain market movements, compare assets, summarize your portfolio and help you understand trading concepts.</p><button onClick={() => tell("The AI assistant needs its server-side model endpoint and authenticated user context connected before it can answer from live account data.")}>Check AI connection</button></div><div className="feature-card"><ShieldCheck/><h2>Trade explanations</h2><p>AI guidance should explain assumptions and risks. It must not promise returns or execute trades without explicit authorization.</p></div></div>}
