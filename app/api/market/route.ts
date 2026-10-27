@@ -72,6 +72,46 @@ async function fromBybit(symbol: string, interval: string) {
   return { tickers, candles, book, source: "Bybit public spot API" };
 }
 
+const coinbaseProducts: Record<string, string> = {
+  BTCUSDT: "BTC-USDT", ETHUSDT: "ETH-USDT", SOLUSDT: "SOL-USDT",
+  XRPUSDT: "XRP-USDT", DOGEUSDT: "DOGE-USDT"
+};
+const candleSeconds: Record<string, number> = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
+
+async function fromCoinbase(symbol: string, interval: string) {
+  const product = coinbaseProducts[symbol];
+  if (!product) throw new Error("Coinbase does not list this pair");
+  const base = "https://api.exchange.coinbase.com/products/" + product;
+  const [ticker, stats, candleRows, bookData] = await Promise.all([
+    getJson(base + "/ticker"),
+    getJson(base + "/stats"),
+    getJson(base + "/candles?granularity=" + candleSeconds[interval]),
+    getJson(base + "/book?level=2")
+  ]);
+  if (!ticker?.price || !Array.isArray(candleRows) || !Array.isArray(bookData?.bids) || !Array.isArray(bookData?.asks)) {
+    throw new Error("Coinbase returned incomplete market data");
+  }
+  const last = Number(ticker.price);
+  const open = Number(stats.open);
+  const tickers = [{
+    symbol, lastPrice: String(last),
+    priceChangePercent: open ? String(((last - open) / open) * 100) : "0",
+    quoteVolume: String(stats.volume || "0"),
+    highPrice: String(stats.high || last),
+    lowPrice: String(stats.low || last)
+  }];
+  const candles = candleRows.slice(0, 64).reverse().map((c: number[]) => [
+    c[0] * 1000, String(c[3]), String(c[2]), String(c[1]), String(c[4]), String(c[5]),
+    c[0] * 1000, String(c[5]), 0, "0", "0", "0"
+  ]);
+  const book = {
+    bids: bookData.bids.slice(0, 10).map((level: string[]) => [level[0], level[1]]),
+    asks: bookData.asks.slice(0, 10).map((level: string[]) => [level[0], level[1]])
+  };
+  if (!candles.length || !book.bids.length || !book.asks.length) throw new Error("Coinbase returned empty chart or order book");
+  return { tickers, candles, book, source: "Coinbase Exchange public API" };
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol") || "BTCUSDT";
@@ -97,6 +137,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     failures.push("Bybit: " + (error instanceof Error ? error.message : "request failed"));
+  }
+
+  try {
+    const market = await fromCoinbase(symbol, interval);
+    return NextResponse.json({ ...market, updatedAt: new Date().toISOString() }, {
+      headers: { "Cache-Control": "no-store, max-age=0" }
+    });
+  } catch (error) {
+    failures.push("Coinbase: " + (error instanceof Error ? error.message : "request failed"));
   }
 
   console.error("Grandstone market providers failed:", failures);
