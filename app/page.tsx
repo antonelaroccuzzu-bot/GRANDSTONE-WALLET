@@ -46,7 +46,7 @@ export default function Home() {
         signal: AbortSignal.timeout(12000)
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Market feed unavailable");
+      if (!response.ok) throw new Error([data?.error || "Market feed unavailable", ...(Array.isArray(data?.details) ? data.details : [])].join(" — "));
       if (!Array.isArray(data.tickers) || !Array.isArray(data.candles) || !Array.isArray(data.book?.bids)) {
         throw new Error("Market feed returned invalid data");
       }
