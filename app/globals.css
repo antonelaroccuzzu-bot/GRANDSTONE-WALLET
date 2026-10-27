@@ -72,3 +72,13 @@ body,.exchange-app{background:radial-gradient(ellipse at 15% 0%,rgba(0,214,112,.
 .top-pill:hover,.top-pill.selected{border-color:#20f59b;background:rgba(32,245,155,.14);color:#effff6}
 .overview-top-group+.overview-top-group .top-pill{border-radius:7px;padding:7px 9px}
 @media(max-width:760px){.overview-top-actions{align-items:flex-start;flex-direction:column;padding:0 16px;margin-top:14px;gap:8px}.overview-top-group{gap:5px}.top-pill{padding:7px 10px;font-size:10px}.overview-top-group+.overview-top-group .top-pill{padding:7px 8px}}
+
+/* Stronger wallet interior typography: balances, deposits, and live trading */
+.exchange-topbar,.exchange-topbar *,.market-sidebar,.market-sidebar *,.overview-dashboard,.overview-dashboard *,.trade-panel,.trade-panel *,.order-card,.order-card *,.deposit-panel,.deposit-panel *,.wallet-panel,.wallet-panel *{font-weight:650}
+.exchange-brand,.pair-title,.ticker-stat strong,.overview-total,.overview-assets strong,.order-card-title,.feature-card strong,.overview-shortcuts button strong{font-weight:850!important}
+.nav-item,.connect-button,.trade-tabs button,.chart-tabs button,.overview-tabs button,.top-pill{font-weight:800!important}
+.field-label,.order-card label,.deposit-panel label,.wallet-panel label,.overview-pnl,.asset-row,.pair-row{font-weight:700!important}
+.pair-title{font-size:13px!important}.pair-row{font-size:12px!important}.ticker-stat strong{font-size:15px!important}
+.overview-total{font-weight:900!important}.overview-shortcuts button strong{font-size:15px!important}.overview-shortcuts button small{font-size:12px!important;font-weight:600}
+button,.order-input,input,select{font-weight:700}
+@media(max-width:760px){.pair-title{font-size:12px!important}.ticker-stat strong{font-size:14px!important}.overview-shortcuts button strong{font-size:14px!important}}
