@@ -171,25 +171,25 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
 function Brand() {
   return <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"center"}}>
     <div style={{width:44,height:44,borderRadius:14,background:"#20f59b",display:"grid",placeItems:"center",color:"#04150f",fontWeight:900,fontSize:22}}>G</div>
-    <div style={{textAlign:"left"}}><div style={{fontWeight:850,letterSpacing:2,color:"#effff6",fontSize:18}}>GRANDSTONE</div><div style={{fontSize:10,letterSpacing:3,color:"#9bcbb0"}}>WALLET & EXCHANGE</div></div>
+    <div style={{textAlign:"left"}}><div style={{fontWeight:850,letterSpacing:2,color:"#effff6",fontSize:18}}>GRANDSTONE</div><div style={{fontSize:11,fontWeight:700,letterSpacing:2,color:"#b4d8c3"}}>WALLET & EXCHANGE</div></div>
   </div>;
 }
 
 function CreatorInfo() {
-  return <aside style={creatorBox}><div style={{color:"#20f59b",fontSize:10,fontWeight:800,letterSpacing:2}}>ABOUT THE CREATOR</div><p style={{margin:"8px 0 5px",fontWeight:700,color:"#effff6"}}>Asogwo Victor Odinaka</p><p style={{margin:0,color:"#9bcbb0",fontSize:12,lineHeight:1.6}}>Founder and builder of Grandstone Wallet, focused on creating digital wallet and technology experiences with a strong emphasis on clear design and account security.</p></aside>;
+  return <aside style={creatorBox}><div style={{color:"#20f59b",fontSize:12,fontWeight:900,letterSpacing:2}}>ABOUT THE CREATOR</div><p style={{margin:"8px 0 5px",fontWeight:700,color:"#effff6"}}>Asogwo Victor Odinaka</p><p style={{margin:0,color:"#d0f0df",fontSize:14,fontWeight:500,lineHeight:1.75}}>Founder and builder of Grandstone Wallet, focused on creating digital wallet and technology experiences with a strong emphasis on clear design and account security.</p></aside>;
 }
 
 const shell: React.CSSProperties = {minHeight:"100vh",display:"grid",placeItems:"center",padding:20,background:"#04150f",color:"#effff6",fontFamily:"Inter,Arial,sans-serif"};
 const panel: React.CSSProperties = {width:"100%",maxWidth:440,boxSizing:"border-box",padding:"30px 26px",border:"1px solid rgba(65,255,159,.2)",borderRadius:18,background:"rgba(8,35,24,.96)",boxShadow:"0 24px 80px #0007"};
-const intro: React.CSSProperties = {color:"#9bcbb0",fontSize:13,lineHeight:1.6,margin:"12px 0 22px",textAlign:"center"};
-const heading: React.CSSProperties = {fontSize:18,textAlign:"center",margin:"22px 0 0",color:"#effff6"};
-const labelStyle: React.CSSProperties = {display:"grid",gap:7,color:"#cde6d8",fontSize:12,fontWeight:600};
-const fieldStyle: React.CSSProperties = {width:"100%",boxSizing:"border-box",padding:"13px 12px",borderRadius:9,border:"1px solid rgba(65,255,159,.25)",background:"#04150f",color:"#effff6",fontSize:14,outline:"none"};
+const intro: React.CSSProperties = {color:"#d0f0df",fontSize:15,fontWeight:600,lineHeight:1.7,margin:"12px 0 22px",textAlign:"center"};
+const heading: React.CSSProperties = {fontSize:22,fontWeight:800,textAlign:"center",margin:"22px 0 0",color:"#effff6",lineHeight:1.35};
+const labelStyle: React.CSSProperties = {display:"grid",gap:8,color:"#effff6",fontSize:14,fontWeight:750,lineHeight:1.5};
+const fieldStyle: React.CSSProperties = {width:"100%",boxSizing:"border-box",padding:"13px 12px",borderRadius:9,border:"1px solid rgba(65,255,159,.25)",background:"#04150f",color:"#effff6",fontSize:16,fontWeight:500,outline:"none"};
 const primary: React.CSSProperties = {border:0,borderRadius:9,padding:14,background:"#20f59b",color:"#04150f",fontWeight:800,fontSize:14,cursor:"pointer",marginTop:4};
-const switchButton: React.CSSProperties = {width:"100%",border:0,background:"transparent",color:"#20f59b",fontSize:13,padding:14,cursor:"pointer"};
-const messageStyle: React.CSSProperties = {fontSize:12,lineHeight:1.5,color:"#d7e2ef",overflowWrap:"anywhere"};
-const errorStyle: React.CSSProperties = {fontSize:12,lineHeight:1.5,color:"#ff9eac",background:"#2b151b",borderRadius:8,padding:10};
-const finePrint: React.CSSProperties = {color:"#6f9d85",fontSize:11,lineHeight:1.6,marginTop:18};
+const switchButton: React.CSSProperties = {width:"100%",border:0,background:"transparent",color:"#20f59b",fontSize:14,fontWeight:750,padding:14,cursor:"pointer"};
+const messageStyle: React.CSSProperties = {fontSize:14,fontWeight:600,lineHeight:1.6,color:"#effff6",overflowWrap:"anywhere"};
+const errorStyle: React.CSSProperties = {fontSize:14,fontWeight:600,lineHeight:1.6,color:"#ffd6dc",background:"#2b151b",borderRadius:8,padding:12};
+const finePrint: React.CSSProperties = {color:"#b4d8c3",fontSize:13,fontWeight:500,lineHeight:1.7,marginTop:18};
 const qrBox: React.CSSProperties = {display:"grid",placeItems:"center",padding:14,margin:"16px auto",width:"fit-content",background:"#fff",borderRadius:12};
 const secret: React.CSSProperties = {display:"block",padding:12,margin:"8px 0",borderRadius:8,background:"#04150f",border:"1px solid rgba(65,255,159,.25)",color:"#20f59b",fontSize:12,overflowWrap:"anywhere",wordBreak:"break-all",textAlign:"center"};
 const creatorBox: React.CSSProperties = {marginTop:24,paddingTop:18,borderTop:"1px solid rgba(65,255,159,.15)"};
