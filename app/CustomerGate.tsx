@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
-import type { User, Factor } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase/client";
 
 type TotpSetup = { id: string; qr: string; secret: string };
@@ -47,7 +47,7 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.mfa.listFactors();
         if (error) throw error;
         if (!alive) return;
-        const active = (data.totp || []).find((factor: Factor) => factor.status === "verified");
+        const active = (data.totp || []).find(factor => factor.status === "verified");
         if (active) {
           const { data: c, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: active.id });
           if (challengeError) throw challengeError;
@@ -55,7 +55,7 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
           setChallenge({ factorId: active.id, challengeId: c.id });
           setSetup(null);
         } else {
-          const pending = (data.totp || []).find((factor: Factor) => factor.status === "unverified");
+          const pending = (data.totp || []).find(factor => factor.status === "unverified");
           if (pending) {
             const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: pending.id });
             if (unenrollError) throw unenrollError;
