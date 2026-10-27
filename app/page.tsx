@@ -29,6 +29,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [guardianEnabled, setGuardianEnabled] = useState(true);
+  // Wallet connection state only; the app never requests seed phrases or private keys.
   const [walletAddress, setWalletAddress] = useState("");
   const [walletBalance, setWalletBalance] = useState("");
   const [walletChain, setWalletChain] = useState("");
