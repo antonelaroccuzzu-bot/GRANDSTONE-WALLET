@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const allowedSymbols = new Set(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT"]);
+const allowedSymbols = new Set(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "TRXUSDT", "LTCUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT", "SHIBUSDT", "PEPEUSDT", "NEARUSDT", "APTUSDT", "ETCUSDT"]);
 const allowedIntervals = new Set(["1m", "5m", "15m", "1h", "4h", "1d"]);
 const binanceHosts = ["https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com"];
 const bybitIntervals: Record<string, string> = { "1m": "1", "5m": "5", "15m": "15", "1h": "60", "4h": "240", "1d": "D" };
@@ -74,7 +74,7 @@ async function fromBybit(symbol: string, interval: string) {
 
 const coinbaseProducts: Record<string, string> = {
   BTCUSDT: "BTC-USDT", ETHUSDT: "ETH-USDT", SOLUSDT: "SOL-USDT",
-  XRPUSDT: "XRP-USDT", DOGEUSDT: "DOGE-USDT"
+  XRPUSDT: "XRP-USDT", DOGEUSDT: "DOGE-USDT", ADAUSDT: "ADA-USDT", AVAXUSDT: "AVAX-USDT",\n  LINKUSDT: "LINK-USDT", DOTUSDT: "DOT-USDT", TRXUSDT: "TRX-USDT", LTCUSDT: "LTC-USDT",\n  BCHUSDT: "BCH-USDT", SHIBUSDT: "SHIB-USDT", NEARUSDT: "NEAR-USDT", ETCUSDT: "ETC-USDT"
 };
 const candleSeconds: Record<string, number> = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
 
