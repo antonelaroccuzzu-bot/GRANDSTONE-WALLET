@@ -5,6 +5,65 @@ export const revalidate = 0;
 
 const allowedSymbols = new Set(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "TRXUSDT", "LTCUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT", "SHIBUSDT", "PEPEUSDT", "NEARUSDT", "APTUSDT", "ETCUSDT"]);
 const allowedIntervals = new Set(["1m", "5m", "15m", "1h", "4h", "1d"]);
+const coinGeckoIds: Record<string, string> = {
+  BTCUSDT: "bitcoin", ETHUSDT: "ethereum", SOLUSDT: "solana", BNBUSDT: "binancecoin",
+  XRPUSDT: "ripple", DOGEUSDT: "dogecoin", ADAUSDT: "cardano", AVAXUSDT: "avalanche-2",
+  LINKUSDT: "chainlink", DOTUSDT: "polkadot", TRXUSDT: "tron", LTCUSDT: "litecoin",
+  BCHUSDT: "bitcoin-cash", SUIUSDT: "sui", TONUSDT: "the-open-network",
+  SHIBUSDT: "shiba-inu", PEPEUSDT: "pepe", NEARUSDT: "near",
+  APTUSDT: "aptos", ETCUSDT: "ethereum-classic"
+};
+
+async function getAllTickers() {
+  const failures: string[] = [];
+  for (const host of binanceHosts) {
+    try {
+      const rows = await getJson(host + "/api/v3/ticker/24hr");
+      if (!Array.isArray(rows)) throw new Error("Unexpected Binance ticker response");
+      const tickers = rows.filter((t: { symbol?: string; lastPrice?: string }) =>
+        allowedSymbols.has(t.symbol || "") && Number(t.lastPrice) > 0
+      );
+      if (tickers.length >= 10) return { tickers, source: "Binance public spot API" };
+    } catch (error) {
+      failures.push("Binance: " + (error instanceof Error ? error.message : "request failed"));
+    }
+  }
+  try {
+    const data = await getJson("https://api.bybit.com/v5/market/tickers?category=spot");
+    if (data.retCode !== 0) throw new Error("Bybit returned an error");
+    const tickers = (data.result?.list || [])
+      .filter((t: { symbol?: string; lastPrice?: string }) => allowedSymbols.has(t.symbol || "") && Number(t.lastPrice) > 0)
+      .map((t: { symbol: string; lastPrice: string; price24hPcnt: string; turnover24h: string; highPrice24h: string; lowPrice24h: string }) => ({
+        symbol: t.symbol, lastPrice: t.lastPrice,
+        priceChangePercent: (Number(t.price24hPcnt) * 100).toString(),
+        quoteVolume: t.turnover24h || "0", highPrice: t.highPrice24h || t.lastPrice,
+        lowPrice: t.lowPrice24h || t.lastPrice
+      }));
+    if (tickers.length >= 10) return { tickers, source: "Bybit public spot API" };
+  } catch (error) {
+    failures.push("Bybit: " + (error instanceof Error ? error.message : "request failed"));
+  }
+  try {
+    const ids = Object.values(coinGeckoIds).join(",");
+    const data = await getJson("https://api.coingecko.com/api/v3/simple/price?ids=" +
+      encodeURIComponent(ids) + "&vs_currencies=usd&include_24hr_change=true");
+    const tickers = Object.entries(coinGeckoIds).flatMap(([symbol, id]) => {
+      const row = data?.[id];
+      const price = Number(row?.usd);
+      if (!Number.isFinite(price) || price <= 0) return [];
+      return [{
+        symbol, lastPrice: String(price),
+        priceChangePercent: String(Number(row.usd_24h_change) || 0),
+        quoteVolume: "0", highPrice: String(price), lowPrice: String(price)
+      }];
+    });
+    if (tickers.length) return { tickers, source: "CoinGecko aggregated reference prices" };
+  } catch (error) {
+    failures.push("CoinGecko: " + (error instanceof Error ? error.message : "request failed"));
+  }
+  throw new Error(failures.join(" | ") || "All ticker providers unavailable");
+}
+
 const binanceHosts = ["https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com"];
 const bybitIntervals: Record<string, string> = { "1m": "1", "5m": "5", "15m": "15", "1h": "60", "4h": "240", "1d": "D" };
 
@@ -136,6 +195,18 @@ async function fromCoinbase(symbol: string, interval: string) {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  if (searchParams.get("mode") === "tickers") {
+    try {
+      const market = await getAllTickers();
+      return NextResponse.json({ ...market, updatedAt: new Date().toISOString() }, {
+        headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" }
+      });
+    } catch (error) {
+      return NextResponse.json({ error: "Market ticker providers are temporarily unavailable.", details: error instanceof Error ? error.message : "Request failed" }, {
+        status: 502, headers: { "Cache-Control": "no-store, max-age=0" }
+      });
+    }
+  }
   const symbol = searchParams.get("symbol") || "BTCUSDT";
   const interval = searchParams.get("interval") || "15m";
   if (!allowedSymbols.has(symbol) || !allowedIntervals.has(interval)) {
