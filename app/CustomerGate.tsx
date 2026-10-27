@@ -55,11 +55,6 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
           setChallenge({ factorId: active.id, challengeId: c.id });
           setSetup(null);
         } else {
-          const pending = (data.totp || []).find(factor => factor.status === "unverified");
-          if (pending) {
-            const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: pending.id });
-            if (unenrollError) throw unenrollError;
-          }
           const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Grandstone Authenticator" });
           if (enrollError) throw enrollError;
           if (!alive) return;
