@@ -106,7 +106,11 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         setSetup(null); setChallenge(null); setVerified(true);
         setMessage("Authenticator verified. Your wallet is unlocked.");
       } else if (challenge) {
-        const { error } = await supabase.auth.mfa.verify({ factorId: challenge.factorId, challengeId: challenge.challengeId, code: code.trim() });
+        // Create a fresh challenge when the code is submitted. A challenge created
+        // when the screen first loaded can expire while the customer opens the app.
+        const { data: freshChallenge, error: freshChallengeError } = await supabase.auth.mfa.challenge({ factorId: challenge.factorId });
+        if (freshChallengeError) throw freshChallengeError;
+        const { error } = await supabase.auth.mfa.verify({ factorId: challenge.factorId, challengeId: freshChallenge.id, code: code.trim() });
         if (error) throw error;
         setVerified(true); setMessage("");
       }
