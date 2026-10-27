@@ -8,7 +8,7 @@ type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; q
 type Candle = [number, string, string, string, string, string, number, string, number, string, string, string];
 type Book = { bids: [string, string][]; asks: [string, string][] };
 type Eip1193Provider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
-declare global { interface Window { ethereum?: Eip1193Provider } }
+declare global { interface Window { ethereum?: Record<string, unknown> & Eip1193Provider } }
 const chainNames: Record<string, string> = { "0x1": "Ethereum", "0x89": "Polygon", "0xa4b1": "Arbitrum", "0xa": "Optimism", "0x2105": "Base", "0x38": "BNB Chain" };
 const pairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "TRXUSDT", "LTCUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT", "SHIBUSDT", "PEPEUSDT", "NEARUSDT", "APTUSDT", "ETCUSDT"];
 const money = (n: number, digits = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—";
