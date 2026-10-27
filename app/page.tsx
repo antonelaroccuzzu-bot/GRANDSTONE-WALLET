@@ -215,7 +215,7 @@ export default function Home() {
                   <small style={{display:"block",marginTop:4}}>{t ? "$"+money(value,value < 1 ? 5 : 2)+" · "+Number(t.priceChangePercent).toFixed(2)+"%" : "Price loading / pair unavailable"}</small>
                   <small style={{display:"block",marginTop:3,opacity:.7}}>Wallet balance: not initialized</small>
                 </div>
-              </div></button>;
+              </button>;
             })}
           </div>
         </div><div className="feature-card"><Wallet/><h2>Self-custody wallet</h2><p>Connect a wallet you control. Grandstone never asks for your recovery phrase or private key.</p>{walletAddress ? <><div className="bot-setting"><span><strong>Connected address</strong><small>{walletAddress}</small></span><span className="disabled-badge">CONNECTED</span></div><div className="bot-setting"><span><strong>Network</strong><small>{walletChain}</small></span><span><strong>{walletBalance}</strong><small>Native coin balance</small></span></div><button onClick={connectWallet}>Refresh wallet balance</button><button onClick={disconnectWalletView}>Disconnect display</button></> : <button onClick={connectWallet} disabled={walletBusy}>{walletBusy ? "Connecting…" : "Connect existing wallet"}</button>}</div><div className="feature-card"><ShieldCheck/><h2>Transaction status</h2><p>Wallet connection enables address and native balance reads only. Sending, swaps, token balances, and transaction history need chain-specific integrations and a confirmation screen before any transaction is signed.</p><div className="bot-setting"><span><strong>Signing authority</strong><small>Your wallet handles transaction approvals.</small></span><span className="disabled-badge">SELF-CUSTODY</span></div></div></div>}
