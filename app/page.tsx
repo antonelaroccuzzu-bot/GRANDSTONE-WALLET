@@ -21,6 +21,7 @@ export default function Home() {
   const [book, setBook] = useState<Book>({ bids: [], asks: [] });
   const [live, setLive] = useState(false);
   const [marketError, setMarketError] = useState("");
+  const [marketSource, setMarketSource] = useState("");
   const [tab, setTab] = useState("Open Orders");
   const [side, setSide] = useState("Buy");
   const [orderType, setOrderType] = useState("Limit");
@@ -50,7 +51,8 @@ export default function Home() {
       if (!Array.isArray(data.tickers) || !Array.isArray(data.candles) || !Array.isArray(data.book?.bids)) {
         throw new Error("Market feed returned invalid data");
       }
-      setTickers((data.tickers as Ticker[]).filter(t => pairs.includes(t.symbol)));
+      setTickers(previous => { const merged = new Map(previous.map(t => [t.symbol, t])); (data.tickers as Ticker[]).filter(t => pairs.includes(t.symbol)).forEach(t => merged.set(t.symbol, t)); return pairs.flatMap(symbol => merged.has(symbol) ? [merged.get(symbol)!] : []); });
+      if (data.source) setMarketSource(data.source);
       setCandles(data.candles as Candle[]);
       setBook(data.book as Book);
       setLive(true);
@@ -67,6 +69,29 @@ export default function Home() {
     const timer = window.setInterval(loadMarket, 15000);
     return () => window.clearInterval(timer);
   }, [loadMarket]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadTickers = async () => {
+      try {
+        const response = await fetch("/api/market?mode=tickers", { cache: "no-store", signal: AbortSignal.timeout(10000) });
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.tickers)) throw new Error(data?.error || "Ticker feed unavailable");
+        if (cancelled) return;
+        setTickers(previous => {
+          const merged = new Map(previous.map(t => [t.symbol, t]));
+          (data.tickers as Ticker[]).filter(t => pairs.includes(t.symbol) && Number(t.lastPrice) > 0).forEach(t => merged.set(t.symbol, t));
+          return pairs.flatMap(symbol => merged.has(symbol) ? [merged.get(symbol)!] : []);
+        });
+        setMarketSource(data.source || "Public market feed");
+      } catch (error) {
+        if (!cancelled) console.error("Grandstone bulk ticker request failed:", error);
+      }
+    };
+    loadTickers();
+    const timer = window.setInterval(loadTickers, 30000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, []);
 
   useEffect(() => { if (activeTicker && !price) setPrice(activeTicker.lastPrice); }, [activeTicker, price]);
 
@@ -140,7 +165,7 @@ export default function Home() {
         <div className="market-filter"><button className="selected">Spot</button><button onClick={() => tell("Derivatives need a supported exchange provider and product-specific risk controls.")}>Derivatives</button></div>
         <div className="pair-head"><span>Pair</span><span>Last price</span><span>24h</span></div>
         {pairs.map(p => { const t = tickers.find(x => x.symbol === p); return <button className={pair === p ? "pair-row chosen" : "pair-row"} key={p} onClick={() => {setPair(p);setPrice("");}}><span className="pair-name"><b>{p.replace("USDT", "")}</b><small>/USDT</small></span><span className="pair-price">{t ? money(Number(t.lastPrice), Number(t.lastPrice) < 1 ? 5 : 2) : "—"}</span><span className={Number(t?.priceChangePercent || 0) >= 0 ? "up" : "down"}>{t ? Number(t.priceChangePercent).toFixed(2) + "%" : "—"}</span></button>; })}
-        <div className="market-sidebar-note"><Activity size={14}/><span>Public spot feed · auto-refresh</span></div>
+        <div className="market-sidebar-note"><Activity size={14}/><span>{marketSource || "Public spot feed"} · auto-refresh</span></div>
       </aside>
 
       <section className="trade-main">
