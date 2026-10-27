@@ -47,12 +47,22 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.mfa.listFactors();
         if (error) throw error;
         if (!alive) return;
-        const active = (data.totp || []).find(factor => factor.status === "verified");
+        const factors = data.totp || [];
+        const active = factors.find(factor => factor.status === "verified");
+        const pending = factors.find(factor => factor.status !== "verified");
         if (active) {
           const { data: c, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: active.id });
           if (challengeError) throw challengeError;
           if (!alive) return;
           setChallenge({ factorId: active.id, challengeId: c.id });
+          setSetup(null);
+        } else if (pending) {
+          // Keep the customer's existing enrollment. Do not silently create a new
+          // secret on each login; let them verify the authenticator they already scanned.
+          const { data: c, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: pending.id });
+          if (challengeError) throw challengeError;
+          if (!alive) return;
+          setChallenge({ factorId: pending.id, challengeId: c.id });
           setSetup(null);
         } else {
           const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Grandstone Authenticator" });
