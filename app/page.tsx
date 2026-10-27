@@ -208,14 +208,14 @@ export default function Home() {
             ].map(([symbol,name,market,mark]) => {
               const t = tickers.find(x => x.symbol === market);
               const value = t ? Number(t.lastPrice) : 0;
-              return <div key={symbol} className="bot-setting" style={{display:"grid",gridTemplateColumns:"38px minmax(0,1fr)",alignItems:"center",gap:10,padding:12,border:"1px solid var(--border, #2b3442)",borderRadius:12}}>
+              return <button type="button" key={symbol} onClick={() => { setPair(market); setPrice(""); setSection("Trade"); }} className="bot-setting" style={{display:"grid",gridTemplateColumns:"38px minmax(0,1fr)",alignItems:"center",gap:10,padding:12,border:"1px solid var(--border, #2b3442)",borderRadius:12,textAlign:"left",cursor:"pointer",width:"100%"}} title={"Open live chart and trading for "+symbol}>
                 <div style={{width:36,height:36,borderRadius:18,display:"grid",placeItems:"center",fontWeight:800,background:"rgba(148,163,184,.14)"}}>{mark}</div>
                 <div style={{minWidth:0}}>
                   <strong>{symbol} <span style={{fontWeight:400,opacity:.7}}>{name}</span></strong>
                   <small style={{display:"block",marginTop:4}}>{t ? "$"+money(value,value < 1 ? 5 : 2)+" · "+Number(t.priceChangePercent).toFixed(2)+"%" : "Price loading / pair unavailable"}</small>
                   <small style={{display:"block",marginTop:3,opacity:.7}}>Wallet balance: not initialized</small>
                 </div>
-              </div>;
+              </div></button>;
             })}
           </div>
         </div><div className="feature-card"><Wallet/><h2>Self-custody wallet</h2><p>Connect a wallet you control. Grandstone never asks for your recovery phrase or private key.</p>{walletAddress ? <><div className="bot-setting"><span><strong>Connected address</strong><small>{walletAddress}</small></span><span className="disabled-badge">CONNECTED</span></div><div className="bot-setting"><span><strong>Network</strong><small>{walletChain}</small></span><span><strong>{walletBalance}</strong><small>Native coin balance</small></span></div><button onClick={connectWallet}>Refresh wallet balance</button><button onClick={disconnectWalletView}>Disconnect display</button></> : <button onClick={connectWallet} disabled={walletBusy}>{walletBusy ? "Connecting…" : "Connect existing wallet"}</button>}</div><div className="feature-card"><ShieldCheck/><h2>Transaction status</h2><p>Wallet connection enables address and native balance reads only. Sending, swaps, token balances, and transaction history need chain-specific integrations and a confirmation screen before any transaction is signed.</p><div className="bot-setting"><span><strong>Signing authority</strong><small>Your wallet handles transaction approvals.</small></span><span className="disabled-badge">SELF-CUSTODY</span></div></div></div>}
