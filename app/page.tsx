@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CustomerWallet from "./CustomerWallet";
-import CustomerGate from "./CustomerGate";
 import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
 type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
@@ -255,5 +254,6 @@ function WalletDashboard() {
 
 
 export default function Home() {
-  return <CustomerGate><WalletDashboard /></CustomerGate>;
+  // Authentication is temporarily disabled at the user's request.
+  return <WalletDashboard />;
 }
