@@ -28,7 +28,11 @@ export default function Home() {
   const [quantity, setQuantity] = useState("");
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [guardianEnabled, setGuardianEnabled] = useState(true);\n  const [walletAddress, setWalletAddress] = useState("");\n  const [walletBalance, setWalletBalance] = useState("");\n  const [walletChain, setWalletChain] = useState("");\n  const [walletBusy, setWalletBusy] = useState(false);
+  const [guardianEnabled, setGuardianEnabled] = useState(true);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletBalance, setWalletBalance] = useState("");
+  const [walletChain, setWalletChain] = useState("");
+  const [walletBusy, setWalletBusy] = useState(false);
   const activeTicker = tickers.find(t => t.symbol === pair);
   const last = Number(activeTicker?.lastPrice || 0);
   const change = Number(activeTicker?.priceChangePercent || 0);
