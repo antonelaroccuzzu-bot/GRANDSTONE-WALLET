@@ -42,3 +42,24 @@ body,.exchange-app{background:radial-gradient(ellipse at 15% 0%,rgba(0,214,112,.
 .order-input:focus-within{border-color:#20f59b;box-shadow:0 0 0 3px rgba(32,245,155,.13)}
 .chart-tabs button.active,.intervals button.selected{color:#72ffc0}
 .up,.live-dot,.feed-status.online i{color:#20f59b}
+
+/* Interactive exchange overview dashboard */
+.overview-dashboard{display:flex;flex-direction:column;gap:20px;max-width:1440px;margin:0 auto;padding:28px}
+.overview-dashboard>h2{font-size:18px;margin:8px 0 0;color:var(--text)}
+.overview-assets{padding:24px!important}
+.overview-total{display:block;font-size:38px;font-weight:750;letter-spacing:-1.2px;margin:8px 0;color:#effff6}
+.overview-total small{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0}
+.overview-assets>p{font-size:12px;color:var(--muted);margin:8px 0 18px}
+.overview-tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 0 14px;margin-bottom:16px}
+.overview-tabs button{border:1px solid transparent;border-radius:9px;padding:9px 16px;color:var(--muted);background:transparent;cursor:pointer}
+.overview-tabs button.selected,.overview-tabs button:hover{color:#052217;background:linear-gradient(135deg,#6dffb8,#20f59b);font-weight:700}
+.overview-pnl{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;color:var(--muted)}
+.overview-pnl strong{color:#20f59b;font-size:14px}
+.overview-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.overview-shortcuts button{display:flex;flex-direction:column;align-items:flex-start;gap:12px;text-align:left;padding:18px;border:1px solid rgba(65,255,159,.18);border-radius:15px;background:linear-gradient(145deg,rgba(12,52,34,.94),rgba(5,26,17,.96));color:var(--text);cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}
+.overview-shortcuts button:hover{transform:translateY(-2px);border-color:#20f59b;box-shadow:0 8px 24px rgba(32,245,155,.1)}
+.overview-shortcuts button>svg{color:#20f59b;width:23px;height:23px}
+.overview-shortcuts button strong{font-size:14px}
+.overview-shortcuts button small{font-size:11px;color:var(--muted)}
+.overview-dashboard .feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:760px){.overview-dashboard{padding:16px;gap:15px}.overview-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-dashboard .feature-grid{grid-template-columns:1fr}.overview-total{font-size:32px}.overview-assets{padding:18px!important}}
