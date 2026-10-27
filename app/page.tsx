@@ -1,92 +1,144 @@
 "use client";
 
-import { useState } from "react";
-import {
-  ArrowDownLeft, ArrowUpRight, Bell, ChevronDown, CircleHelp, CreditCard,
-  Eye, EyeOff, LayoutDashboard, LogOut, Plus, Search, Settings, ShieldCheck,
-  Wallet, ArrowLeftRight, ChartNoAxesCombined, Coins, Send, Download, Bot,
-  MoreHorizontal, Clock3, ExternalLink
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
-const assets = [
-  { name: "Bitcoin", ticker: "BTC", amount: "0.0842 BTC", value: "$5,612.48", change: "+2.4%", symbol: "₿", style: "bitcoin" },
-  { name: "Ethereum", ticker: "ETH", amount: "1.42 ETH", value: "$4,280.16", change: "+1.8%", symbol: "Ξ", style: "ethereum" },
-  { name: "USD Coin", ticker: "USDC", amount: "850.00 USDC", value: "$850.00", change: "0.0%", symbol: "$", style: "usdc" },
-];
-
-const transactions = [
-  { title: "Received Bitcoin", subtitle: "Demo transaction · Oct 26, 2026", amount: "+0.012 BTC", value: "+$800.40", kind: "in", icon: ArrowDownLeft },
-  { title: "USDC transfer", subtitle: "Demo transaction · Oct 24, 2026", amount: "−120.00 USDC", value: "−$120.00", kind: "out", icon: ArrowUpRight },
-  { title: "Bought Ethereum", subtitle: "Demo transaction · Oct 22, 2026", amount: "+0.15 ETH", value: "+$452.10", kind: "in", icon: ArrowLeftRight },
-];
+type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
+type Candle = [number, string, string, string, string, string, number, string, number, string, string, string];
+type Book = { bids: [string, string][]; asks: [string, string][] };
+const pairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT"];
+const money = (n: number, digits = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—";
 
 export default function Home() {
-  const [balanceVisible, setBalanceVisible] = useState(true);
+  const [section, setSection] = useState("Trade");
+  const [pair, setPair] = useState("BTCUSDT");
+  const [interval, setInterval] = useState("15m");
+  const [tickers, setTickers] = useState<Ticker[]>([]);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [book, setBook] = useState<Book>({ bids: [], asks: [] });
+  const [live, setLive] = useState(false);
+  const [marketError, setMarketError] = useState("");
+  const [tab, setTab] = useState("Open Orders");
+  const [side, setSide] = useState("Buy");
+  const [orderType, setOrderType] = useState("Limit");
+  const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [notice, setNotice] = useState("");
-  const showAction = (action: string) => setNotice(action + " is not connected yet. Connect a verified wallet or provider to enable real transactions.");
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [guardianEnabled, setGuardianEnabled] = useState(true);
+  const activeTicker = tickers.find(t => t.symbol === pair);
+  const last = Number(activeTicker?.lastPrice || 0);
+  const change = Number(activeTicker?.priceChangePercent || 0);
+  const total = Number(quantity || 0) * (orderType === "Market" ? last : Number(price || last));
 
-  return (
-    <main className="wallet-app">
-      <aside className="sidebar">
-        <a className="brand" href="#"><span className="brand-icon"><Wallet size={22} /></span><span>GRANDSTONE<small>WALLET</small></span></a>
-        <div className="side-label">MENU</div>
-        <a className="side-link selected" href="#"><LayoutDashboard size={18} /> Overview</a>
-        <a className="side-link" href="#assets"><Coins size={18} /> My assets</a>
-        <a className="side-link" href="#transactions"><ArrowLeftRight size={18} /> Transactions</a>
-        <a className="side-link" href="#markets"><ChartNoAxesCombined size={18} /> Markets</a>
-        <div className="side-label tools-label">TOOLS</div>
-        <a className="side-link" href="#guardian"><Bot size={18} /> AI Trade Guardian <span className="new-tag">AI</span></a>
-        <a className="side-link" href="#security"><ShieldCheck size={18} /> Security</a>
-        <div className="sidebar-spacer" />
-        <div className="help-card"><div className="help-icon"><CircleHelp size={18}/></div><strong>Need a hand?</strong><p>Wallet setup and security guidance.</p><button onClick={() => showAction("Help center")}>Get support <ExternalLink size={13}/></button></div>
-        <a className="side-link bottom-link" href="#settings"><Settings size={18} /> Settings</a>
-        <div className="side-profile"><div className="avatar">G</div><div className="profile-text"><strong>My wallet</strong><span>Personal account · Demo</span></div><MoreHorizontal size={18}/></div>
+  const loadMarket = useCallback(async () => {
+    try {
+      const results = await Promise.all([
+        fetch("https://api.binance.com/api/v3/ticker/24hr", { cache: "no-store" }),
+        fetch("https://api.binance.com/api/v3/klines?symbol=" + pair + "&interval=" + interval + "&limit=64", { cache: "no-store" }),
+        fetch("https://api.binance.com/api/v3/depth?symbol=" + pair + "&limit=10", { cache: "no-store" })
+      ]);
+      if (results.some(r => !r.ok)) throw new Error("Market feed unavailable");
+      const data = await Promise.all(results.map(r => r.json()));
+      setTickers((data[0] as Ticker[]).filter(t => pairs.includes(t.symbol)));
+      setCandles(data[1] as Candle[]);
+      setBook(data[2] as Book);
+      setLive(true);
+      setMarketError("");
+    } catch {
+      setLive(false);
+      setMarketError("Live market feed unavailable. Check connection and retry.");
+    }
+  }, [pair, interval]);
+
+  useEffect(() => {
+    loadMarket();
+    const timer = window.setInterval(loadMarket, 15000);
+    return () => window.clearInterval(timer);
+  }, [loadMarket]);
+
+  useEffect(() => { if (activeTicker && !price) setPrice(activeTicker.lastPrice); }, [activeTicker, price]);
+
+  const chart = useMemo(() => {
+    if (!candles.length) return null;
+    const values = candles.map(c => ({ low: Number(c[3]), high: Number(c[2]), open: Number(c[1]), close: Number(c[4]) }));
+    const min = Math.min(...values.map(v => v.low)) * .999;
+    const max = Math.max(...values.map(v => v.high)) * 1.001;
+    const range = max - min || 1;
+    const y = (v: number) => 260 - ((v - min) / range) * 250;
+    const step = 900 / values.length;
+    return values.map((v, i) => <g key={i} stroke={v.close >= v.open ? "#16b887" : "#f05268"} strokeWidth="1">
+      <line x1={i * step + step / 2} x2={i * step + step / 2} y1={y(v.high)} y2={y(v.low)} />
+      <rect x={i * step + step * .2} y={Math.min(y(v.open), y(v.close))} width={Math.max(2, step * .6)} height={Math.max(1, Math.abs(y(v.open) - y(v.close)))} fill={v.close >= v.open ? "#16b887" : "#f05268"} stroke="none" />
+    </g>);
+  }, [candles]);
+
+  const nav = [
+    { label: "Overview", icon: LayoutDashboard },
+    { label: "Trade", icon: CandlestickChart },
+    { label: "Markets", icon: Activity },
+    { label: "Assets", icon: Wallet },
+    { label: "Trading bots", icon: Bot },
+    { label: "AI Guardian", icon: ShieldCheck }
+  ];
+  const tell = (s: string) => setNotice(s);
+  const submitOrder = () => tell("Order not sent. Public market data is live, but private exchange authentication, order signing and server-side risk checks are not connected. No trade was placed.");
+
+  return <main className="exchange-app">
+    <header className="exchange-topbar">
+      <button className="exchange-brand" onClick={() => setSection("Overview")}><span className="brand-mark"><Coins size={21}/></span><span>GRANDSTONE<small>WALLET & EXCHANGE</small></span></button>
+      <nav className="desktop-nav">{nav.map(n => <button key={n.label} className={section === n.label ? "nav-item active" : "nav-item"} onClick={() => setSection(n.label)}>{n.label}</button>)}</nav>
+      <div className="header-tools"><span className={live ? "feed-status online" : "feed-status"}><i/>{live ? "Live market" : "Market offline"}</span><button className="header-icon" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated account.")}><Bell size={18}/></button><button className="connect-button" onClick={() => tell("Wallet connection is not configured yet. No wallet has been connected.")}><Wallet size={16}/> Connect wallet</button><button className="mobile-menu-button" aria-label="Menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu/></button></div>
+    </header>
+    {mobileMenu && <nav className="mobile-nav">{nav.map(n => <button key={n.label} onClick={() => {setSection(n.label);setMobileMenu(false);}}>{n.label}</button>)}</nav>}
+    {notice && <div className="exchange-notice" role="status"><ShieldAlert size={18}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss"><X size={16}/></button></div>}
+
+    {section === "Trade" || section === "Markets" ? <div className="trading-layout">
+      <aside className="market-sidebar">
+        <div className="market-side-head"><strong>Markets</strong><button aria-label="Search markets" onClick={() => tell("Market search is coming with the full market directory.")}><Search size={16}/></button></div>
+        <div className="market-filter"><button className="selected">Spot</button><button onClick={() => tell("Derivatives need a supported exchange provider and product-specific risk controls.")}>Derivatives</button></div>
+        <div className="pair-head"><span>Pair</span><span>Last price</span><span>24h</span></div>
+        {pairs.map(p => { const t = tickers.find(x => x.symbol === p); return <button className={pair === p ? "pair-row chosen" : "pair-row"} key={p} onClick={() => {setPair(p);setPrice("");}}><span className="pair-name"><b>{p.replace("USDT", "")}</b><small>/USDT</small></span><span className="pair-price">{t ? money(Number(t.lastPrice), Number(t.lastPrice) < 1 ? 5 : 2) : "—"}</span><span className={Number(t?.priceChangePercent || 0) >= 0 ? "up" : "down"}>{t ? Number(t.priceChangePercent).toFixed(2) + "%" : "—"}</span></button>; })}
+        <div className="market-sidebar-note"><Activity size={14}/><span>Public spot feed · auto-refresh</span></div>
       </aside>
 
-      <section className="content">
-        <header className="topbar">
-          <div className="mobile-brand"><span className="brand-icon"><Wallet size={20}/></span> GRANDSTONE</div>
-          <div className="breadcrumbs">Wallet <span>/</span> <strong>Overview</strong></div>
-          <div className="top-actions"><button className="icon-button search-button" aria-label="Search" onClick={() => showAction("Search")}><Search size={18}/></button><button className="icon-button" aria-label="Notifications" onClick={() => showAction("Notifications")}><Bell size={18}/><i/></button><div className="top-avatar">G</div><button className="account-switch" onClick={() => showAction("Account switcher")}>Personal <ChevronDown size={15}/></button></div>
-        </header>
-
-        <div className="page-intro"><div><p className="overline">TUESDAY, OCTOBER 27, 2026</p><h1>Your wallet overview</h1><p className="intro-copy">Manage your digital assets from one secure place.</p></div><button className="outline-button" onClick={() => showAction("Wallet connection")}><Plus size={17}/> Connect wallet</button></div>
-
-        {notice && <div className="notice" role="status"><ShieldCheck size={17}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss">×</button></div>}
-
-        <section className="dashboard-grid">
-          <div className="balance-card">
-            <div className="balance-top"><span><span className="balance-dot"/> TOTAL PORTFOLIO VALUE</span><button onClick={() => setBalanceVisible(!balanceVisible)} aria-label="Toggle balance">{balanceVisible ? <Eye size={17}/> : <EyeOff size={17}/>}</button></div>
-            <div className="balance-amount">{balanceVisible ? "$10,742.64" : "••••••••"}</div>
-            <div className="balance-change"><span>↗ 2.16%</span> <span>past 24 hours · demo estimate</span></div>
-            <div className="balance-rule"/>
-            <div className="balance-footer"><div><span>Wallet status</span><strong><i className="status-pip"/> Not connected</strong></div><div className="balance-watermark"><Wallet size={72}/></div></div>
-          </div>
-          <div className="quick-card"><div className="card-heading"><h2>Quick actions</h2><span>WALLET</span></div><div className="action-grid">
-            <button className="action-item" onClick={() => showAction("Send")}><span className="action-icon send"><Send size={19}/></span><strong>Send</strong><small>Transfer assets</small></button>
-            <button className="action-item" onClick={() => showAction("Receive")}><span className="action-icon receive"><Download size={19}/></span><strong>Receive</strong><small>Get assets</small></button>
-            <button className="action-item" onClick={() => showAction("Buy crypto")}><span className="action-icon buy"><Plus size={20}/></span><strong>Buy</strong><small>Purchase crypto</small></button>
-            <button className="action-item" onClick={() => showAction("Swap")}><span className="action-icon swap"><ArrowLeftRight size={19}/></span><strong>Swap</strong><small>Exchange assets</small></button>
-          </div></div>
-        </section>
-
-        <section className="lower-grid">
-          <div className="panel assets-panel" id="assets"><div className="panel-heading"><div><h2>Your assets</h2><p>Example portfolio · not connected to live funds</p></div><button className="text-button" onClick={() => showAction("Asset details")}>View all <ArrowUpRight size={15}/></button></div>
-            <div className="asset-table"><div className="asset-row table-head"><span>ASSET</span><span>YOUR BALANCE</span><span>VALUE</span><span>24H</span></div>
-              {assets.map((asset) => <div className="asset-row" key={asset.ticker}><div className="asset-name"><span className={"coin "+asset.style}>{asset.symbol}</span><span><strong>{asset.name}</strong><small>{asset.ticker}</small></span></div><div className="asset-amount">{asset.amount}</div><div className="asset-value">{asset.value}</div><div className={asset.change.startsWith("+") ? "positive" : "neutral"}>{asset.change}</div></div>)}
-            </div>
-            <button className="full-width-button" onClick={() => showAction("Add asset")}><Plus size={16}/> Add an asset</button>
-          </div>
-
-          <div className="panel transactions-panel" id="transactions"><div className="panel-heading"><div><h2>Recent activity</h2><p>Your latest wallet movements</p></div><button className="more-button" aria-label="More activity options" onClick={() => showAction("Transaction history")}><MoreHorizontal size={19}/></button></div>
-            <div className="transaction-list">{transactions.map((tx, index) => <div className="transaction-row" key={tx.title}><span className={"transaction-icon "+tx.kind}><tx.icon size={17}/></span><div className="transaction-info"><strong>{tx.title}</strong><small>{tx.subtitle}</small></div><div className="transaction-amount"><strong className={tx.kind === "in" ? "positive" : ""}>{tx.amount}</strong><small>{tx.value}</small></div></div>)}</div>
-            <button className="full-width-button" onClick={() => showAction("Full transaction history")}>View transaction history <ArrowUpRight size={15}/></button>
-          </div>
-        </section>
-
-        <section className="guardian-banner" id="guardian"><div className="guardian-symbol"><ShieldCheck size={24}/></div><div className="guardian-copy"><span className="overline">GRANDSTONE INTELLIGENCE</span><h2>Every move deserves a second look.</h2><p>AI Trade Guardian is planned to flag suspicious activity and explain trading risks before you proceed.</p></div><span className="building-badge">IN DEVELOPMENT</span></section>
-        <footer><span>© 2026 GRANDSTONE WALLET</span><span><i className="status-pip"/> DEMO INTERFACE · NO LIVE FUNDS CONNECTED</span></footer>
+      <section className="trade-main">
+        <div className="pair-overview"><div className="pair-title"><div className="coin-token">{pair.startsWith("BTC") ? "₿" : pair.startsWith("ETH") ? "◆" : pair.startsWith("SOL") ? "◎" : pair.startsWith("BNB") ? "◆" : pair.startsWith("XRP") ? "✕" : "Ð"}</div><div><h1>{pair.replace("USDT", " / USDT")} <ChevronDown size={16}/></h1><small>Spot market</small></div></div>
+          <div className="ticker-stat main-stat"><small>Last price</small><strong>{last ? "$" + money(last, last < 1 ? 5 : 2) : "—"}</strong><span className={change >= 0 ? "up" : "down"}>{activeTicker ? (change >= 0 ? "+" : "") + change.toFixed(2) + "%" : "Loading"}</span></div>
+          <div className="ticker-stat"><small>24h high</small><strong>{activeTicker ? "$" + money(Number(activeTicker.highPrice)) : "—"}</strong></div><div className="ticker-stat"><small>24h low</small><strong>{activeTicker ? "$" + money(Number(activeTicker.lowPrice)) : "—"}</strong></div><div className="ticker-stat volume-stat"><small>24h volume (USDT)</small><strong>{activeTicker ? money(Number(activeTicker.quoteVolume), 0) : "—"}</strong></div>
+        </div>
+        <div className="chart-panel">
+          <div className="chart-toolbar"><div className="chart-tabs"><button className="active">Candles</button><button onClick={() => tell("TradingView embed is not configured. Current chart uses live public candles.")}>TradingView</button><button onClick={() => tell("Depth is displayed in the order book on the right.")}>Depth</button></div><div className="intervals">{["1m","5m","15m","1h","4h","1d"].map(i => <button key={i} className={interval === i ? "selected" : ""} onClick={() => setInterval(i)}>{i}</button>)}</div></div>
+          <div className="chart-legend"><strong>{pair.replace("USDT", "/USDT")}</strong><span>O {candles.length ? money(Number(candles[candles.length-1][1])) : "—"}</span><span>H {candles.length ? money(Number(candles[candles.length-1][2])) : "—"}</span><span>L {candles.length ? money(Number(candles[candles.length-1][3])) : "—"}</span><span>C {candles.length ? money(Number(candles[candles.length-1][4])) : "—"}</span></div>
+          <div className="chart-canvas">{candles.length ? <svg viewBox="0 0 900 270" preserveAspectRatio="none" role="img" aria-label={pair + " live candlestick chart"}><defs><pattern id="grid" width="90" height="54" patternUnits="userSpaceOnUse"><path d="M 90 0 L 0 0 0 54" fill="none" stroke="#28313e" strokeWidth=".7"/></pattern></defs><rect width="900" height="270" fill="url(#grid)"/>{chart}</svg> : <div className="chart-loading">{marketError || "Loading live candles…"}</div>}</div>
+          <div className="chart-footer"><span><i className={live ? "live-dot" : "offline-dot"}/>{live ? "Public Binance market data · refreshes every 15 seconds" : "Market data disconnected"}</span><span>Public data only · no orders sent</span></div>
+        </div>
+        <div className="bottom-trade-panel"><div className="trade-tabs">{["Open Orders","Order History","Trade History","Assets"].map(t => <button key={t} className={tab === t ? "selected" : ""} onClick={() => setTab(t)}>{t}</button>)}</div><div className="empty-orders"><Clock3 size={21}/><strong>{tab}</strong><span>{tab === "Open Orders" ? "No connected exchange account. Your real orders will appear here after integration." : "Account data is not connected yet."}</span></div></div>
       </section>
-    </main>
-  );
+
+      <aside className="order-sidebar">
+        <div className="order-card"><div className="order-card-title"><h2>Spot trading</h2><button aria-label="Order settings" onClick={() => tell("Order preferences will be available after account setup.")}><Settings size={16}/></button></div>
+          <div className="order-mode"><button className={side === "Buy" ? "buy-selected" : ""} onClick={() => setSide("Buy")}>Buy</button><button className={side === "Sell" ? "sell-selected" : ""} onClick={() => setSide("Sell")}>Sell</button></div>
+          <div className="order-type">{["Limit","Market","Stop-limit"].map(t => <button key={t} className={orderType === t ? "selected" : ""} onClick={() => setOrderType(t)}>{t}</button>)}</div>
+          {orderType !== "Market" && <label className="field-label">Price <span>USDT</span><div className="order-input"><input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder={last ? String(last) : "Price"}/><button onClick={() => setPrice(String(last))}>Last</button></div></label>}
+          <label className="field-label">Amount <span>{pair.replace("USDT", "")}</span><div className="order-input"><input inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0.00"/><button onClick={() => setQuantity("0.01")}>Set</button></div></label>
+          <div className="amount-shortcuts">{["25%","50%","75%","100%"].map((v,i) => <button key={v} onClick={() => setQuantity(String((i+1)*0.0025))}>{v}</button>)}</div>
+          <div className="order-summary"><span>Estimated total</span><strong>{total ? "$" + money(total) : "—"} <small>USDT</small></strong></div><div className="available-balance"><span>Available balance</span><strong>— USDT</strong></div>
+          <button className={side === "Buy" ? "submit-order buy-order" : "submit-order sell-order"} onClick={submitOrder}>{side} {pair.replace("USDT", "")}</button>
+          <div className="order-warning"><ShieldAlert size={15}/><span>Order execution is locked until secure account connection and risk checks are verified.</span></div>
+        </div>
+        <div className="orderbook-card"><div className="orderbook-head"><h2>Order book</h2><span>USDT</span></div><div className="book-columns"><span>Price</span><span>Amount</span><span>Total</span></div>
+          {book.asks.slice(0,5).reverse().map((r,i) => <div className="book-row ask" key={"a"+i}><span>{money(Number(r[0]))}</span><span>{Number(r[1]).toFixed(4)}</span><span>{money(Number(r[0])*Number(r[1]))}</span></div>)}
+          <div className={change >= 0 ? "book-mid up" : "book-mid down"}>{last ? "$"+money(last) : "—"} <small>{change >= 0 ? "+" : ""}{change.toFixed(2)}%</small></div>
+          {book.bids.slice(0,5).map((r,i) => <div className="book-row bid" key={"b"+i}><span>{money(Number(r[0]))}</span><span>{Number(r[1]).toFixed(4)}</span><span>{money(Number(r[0])*Number(r[1]))}</span></div>)}
+        </div>
+      </aside>
+    </div> : <section className="feature-page"><div className="feature-title"><span className="eyebrow">GRANDSTONE PLATFORM</span><h1>{section}</h1><p>Your wallet, markets and AI-assisted trading workspace.</p></div>
+      {section === "Overview" && <div className="feature-grid"><div className="feature-card portfolio-card"><span>Portfolio value</span><strong>$0.00</strong><small>No wallet connected. No funds are represented.</small><button className="feature-cta" onClick={() => tell("Wallet connection requires a configured wallet provider.")}>Connect wallet</button></div><div className="feature-card"><Wallet/><h2>Wallet</h2><p>Secure self-custody and account connections require a verified signing and recovery flow.</p><button onClick={() => setSection("Assets")}>Open assets</button></div><div className="feature-card"><CandlestickChart/><h2>Spot trading</h2><p>Live public market prices and an order-entry preview.</p><button onClick={() => setSection("Trade")}>Open terminal</button></div></div>}
+      {section === "Assets" && <div className="feature-card"><Wallet/><h2>Assets & transfers</h2><p>Connect a supported wallet to load verified balances and transaction history. Deposits and withdrawals are not enabled yet.</p><button onClick={() => tell("No wallet provider is connected. No transfer has been made.")}>Connect wallet</button></div>}
+      {section === "Trading bots" && <div className="feature-card"><Bot/><h2>Strategy bots</h2><p>Define entry rules, position sizing, stop-loss limits, maximum daily loss and Guardian approval. Bot execution stays disabled until a provider is securely connected.</p><div className="bot-setting"><span><strong>Bot execution</strong><small>Not connected · no orders can be placed</small></span><span className="disabled-badge">DISABLED</span></div></div>}
+      {section === "AI Guardian" && <div className="feature-card"><ShieldCheck/><h2>Grandstone AI Trade Guardian</h2><p>Review volatility, order size, concentration, suspicious assets and your strategy rules before confirmation.</p><div className="bot-setting"><span><strong>Pre-trade review</strong><small>Risk rules must be enforced server-side before live orders.</small></span><button className={guardianEnabled ? "toggle on" : "toggle"} onClick={() => setGuardianEnabled(!guardianEnabled)}><i/></button></div><div className="guardian-rule"><ShieldAlert size={18}/><span>Hard security and compliance blocks cannot be overridden.</span></div></div>}
+    </section>}
+    <footer className="exchange-footer"><span>© 2026 GRANDSTONE WALLET</span><span><i className={live ? "live-dot" : "offline-dot"}/>{live ? "Public market data connected" : "Market feed unavailable"} · private trading not connected</span></footer>
+  </main>;
 }
