@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CustomerWallet from "./CustomerWallet";
+import CustomerGate from "./CustomerGate";
 import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
 type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
@@ -11,7 +12,7 @@ const chainNames: Record<string, string> = { "0x1": "Ethereum", "0x89": "Polygon
 const pairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "TRXUSDT", "LTCUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT", "SHIBUSDT", "PEPEUSDT", "NEARUSDT", "APTUSDT", "ETCUSDT"];
 const money = (n: number, digits = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—";
 
-export default function Home() {
+function WalletDashboard() {
   const [section, setSection] = useState("Overview");
   const [pair, setPair] = useState("BTCUSDT");
   const [interval, setInterval] = useState("15m");
@@ -250,4 +251,9 @@ export default function Home() {
     </section>}
     <footer className="exchange-footer"><span>© 2026 GRANDSTONE WALLET</span><span><i className={live ? "live-dot" : "offline-dot"}/>{live ? "Public market data connected" : "Market feed unavailable"} · private trading not connected</span></footer>
   </main>;
+}
+
+
+export default function Home() {
+  return <CustomerGate><WalletDashboard /></CustomerGate>;
 }
