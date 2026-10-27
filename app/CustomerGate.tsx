@@ -116,8 +116,19 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         setSetup(null); setChallenge(null); setVerified(true);
         setMessage("Authenticator verified. Your wallet is unlocked.");
       } else if (challenge) {
-        // Create a fresh challenge when the code is submitted. A challenge created
-        // when the screen first loaded can expire while the customer opens the app.
+        // Ensure the authenticated session is still available before calling
+        // Supabase's protected MFA endpoints. Never send a challenge request
+        // without a session access token.
+        let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!sessionData.session) {
+          const refreshed = await supabase.auth.refreshSession();
+          if (refreshed.error) throw refreshed.error;
+          sessionData = { session: refreshed.data.session };
+        }
+        if (!sessionData.session?.access_token) {
+          throw new Error("Your sign-in session has expired. Please sign in again, then enter your authenticator code.");
+        }
         const { data: freshChallenge, error: freshChallengeError } = await supabase.auth.mfa.challenge({ factorId: challenge.factorId });
         if (freshChallengeError) throw freshChallengeError;
         const { error } = await supabase.auth.mfa.verify({ factorId: challenge.factorId, challengeId: freshChallenge.id, code: code.trim() });
