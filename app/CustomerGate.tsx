@@ -60,7 +60,7 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         } else {
           // An enrolled, verified factor remains attached to this account
           // and is reused for every future sign-in.
-          const pendingFactor = data.totp?.find(factor => factor.status === "unverified");
+          const pendingFactor = data.totp?.find(factor => (factor.status as string) === "unverified");
           if (pendingFactor) {
             const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: pendingFactor.id });
             if (removeError) throw removeError;
