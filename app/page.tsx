@@ -8,6 +8,7 @@ import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, Candl
 type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
 type Candle = [number, string, string, string, string, string, number, string, number, string, string, string];
 type Book = { bids: [string, string][]; asks: [string, string][] };
+type WalletBalance = { id: string; asset: string; network: string; available_balance: string; locked_balance: string; updated_at: string };
 const chainNames: Record<string, string> = { "0x1": "Ethereum", "0x89": "Polygon", "0xa4b1": "Arbitrum", "0xa": "Optimism", "0x2105": "Base", "0x38": "BNB Chain" };
 const pairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "TRXUSDT", "LTCUSDT", "BCHUSDT", "SUIUSDT", "TONUSDT", "SHIBUSDT", "PEPEUSDT", "NEARUSDT", "APTUSDT", "ETCUSDT"];
 const money = (n: number, digits = 2) => Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "—";
@@ -22,6 +23,8 @@ function WalletDashboard() {
   const [live, setLive] = useState(false);
   const [marketError, setMarketError] = useState("");
   const [marketSource, setMarketSource] = useState("");
+  const [walletBalances, setWalletBalances] = useState<WalletBalance[]>([]);
+  const [balanceStatus, setBalanceStatus] = useState("Loading account balances…");
   const [tab, setTab] = useState("Open Orders");
   const [side, setSide] = useState("Buy");
   const [orderType, setOrderType] = useState("Limit");
@@ -117,6 +120,48 @@ function WalletDashboard() {
     return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadBalances = async () => {
+      if (!supabase) { setBalanceStatus("Account service is not configured."); return; }
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const token = data.session?.access_token;
+        if (!token) { setWalletBalances([]); setBalanceStatus("Sign in to view balances."); return; }
+        const response = await fetch("/api/wallet/balances", {
+          headers: { Authorization: "Bearer " + token },
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000)
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload?.error || "Could not load wallet balances.");
+        if (cancelled) return;
+        const rows = Array.isArray(payload.balances) ? payload.balances as WalletBalance[] : [];
+        setWalletBalances(rows);
+        setBalanceStatus(rows.length ? "Balances loaded from Grandstone ledger." : "Ledger connected. No balances have been credited.");
+      } catch (error) {
+        if (!cancelled) setBalanceStatus(error instanceof Error ? error.message : "Wallet balances unavailable.");
+      }
+    };
+    void loadBalances();
+    const timer = window.setInterval(() => void loadBalances(), 30000);
+    const auth = supabase?.auth.onAuthStateChange(() => { void loadBalances(); });
+    return () => { cancelled = true; window.clearInterval(timer); auth?.data.subscription.unsubscribe(); };
+  }, []);
+
+  const estimatedWalletUsd = walletBalances.reduce((sum, row) => {
+    const amount = Number(row.available_balance || 0) + Number(row.locked_balance || 0);
+    if (!Number.isFinite(amount)) return sum;
+    if (row.asset === "USDT" || row.asset === "USDC" || row.asset === "USD") return sum + amount;
+    const ticker = tickers.find(item => item.symbol === row.asset + "USDT");
+    return ticker ? sum + amount * Number(ticker.lastPrice || 0) : sum;
+  }, 0);
+  const hasPricedWalletBalance = walletBalances.some(row => {
+    const amount = Number(row.available_balance || 0) + Number(row.locked_balance || 0);
+    return amount > 0 && (["USDT", "USDC", "USD"].includes(row.asset) || tickers.some(item => item.symbol === row.asset + "USDT"));
+  });
+
   useEffect(() => { if (activeTicker && !price) setPrice(activeTicker.lastPrice); }, [activeTicker, price]);
 
   const chart = useMemo(() => {
@@ -209,9 +254,9 @@ function WalletDashboard() {
           </div>
           <div className="mobile-balance-panel">
             <div className="mobile-balance-label">Total Assets <Eye size={16}/></div>
-            <div className="mobile-balance-row"><div className="mobile-balance-amount">$0.00 <small>USD</small></div><button onClick={() => setSection("Deposit")}>Deposit <ArrowDownLeft size={18}/></button></div>
+            <div className="mobile-balance-row"><div className="mobile-balance-amount">{hasPricedWalletBalance ? "$"+money(estimatedWalletUsd) : "—"} <small>USD</small></div><button onClick={() => setSection("Deposit")}>Deposit <ArrowDownLeft size={18}/></button></div>
             <div className="mobile-pnl"><span>Today's P&amp;L</span><strong>— USD (—%)</strong></div>
-            <div className="mobile-balance-note">Your verified wallet balance will appear here.</div>
+            <div className="mobile-balance-note">{balanceStatus}</div>
           </div>
           <div className="mobile-shortcuts">
             <button onClick={() => setSection("Deposit")}><span><ArrowDownLeft/></span>Deposit</button>
@@ -234,7 +279,7 @@ function WalletDashboard() {
           <div className="mobile-market-tabs"><button onClick={() => setSection("Markets")}>Favorites</button><button className="active" onClick={() => setSection("Markets")}>Spot</button><button onClick={() => tell("Futures require a supported derivatives provider and risk controls.")}>Futures</button><button onClick={() => setSection("Assets")}>Crypto assets</button></div>
           <nav className="mobile-bottom-nav" aria-label="Main navigation"><button className="active" onClick={() => setSection("Overview")}><LayoutDashboard/><span>Home</span></button><button onClick={() => setSection("Markets")}><Activity/><span>Markets</span></button><button onClick={() => setSection("Trade")}><CandlestickChart/><span>Trade</span></button><button onClick={() => setSection("More")}><Zap/><span>TradFi</span></button><button onClick={() => setSection("Assets")}><Wallet/><span>Assets</span></button></nav>
         </div>
-        <div className="desktop-overview-content"><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Deposit")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">$0.00 <small>USD</small></strong><p>Connect an account to show verified balances. No funds are connected.</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
+        <div className="desktop-overview-content"><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Deposit")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">{hasPricedWalletBalance ? "$"+money(estimatedWalletUsd) : "—"} <small>USD</small></strong><p>{balanceStatus}</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
         <div className="feature-card" style={{gridColumn:"1 / -1"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
             <div><h2>Live market overview</h2><p>Prices refresh automatically from public market providers. These are market prices, not your wallet balances.</p></div>
@@ -291,7 +336,7 @@ function WalletDashboard() {
                 <div style={{minWidth:0}}>
                   <strong>{symbol} <span style={{fontWeight:400,opacity:.7}}>{name}</span></strong>
                   <small style={{display:"block",marginTop:4}}>{t ? "$"+money(value,value < 1 ? 5 : 2)+" · "+Number(t.priceChangePercent).toFixed(2)+"%" : "Price loading / pair unavailable"}</small>
-                  <small style={{display:"block",marginTop:3,opacity:.7}}>Wallet balance: not initialized</small>
+                  <small style={{display:"block",marginTop:3,opacity:.7}}>Wallet balance: {walletBalances.filter(row => row.asset === symbol).reduce((sum, row) => sum + Number(row.available_balance || 0) + Number(row.locked_balance || 0), 0).toLocaleString("en-US", { maximumFractionDigits: 8 })} {symbol}</small>
                 </div>
               </button>;
             })}
