@@ -169,7 +169,45 @@ function WalletDashboard() {
         </div>
       </aside>
     </div> : <section className="feature-page"><div className="feature-title"><span className="eyebrow">GRANDSTONE PLATFORM</span><h1>{section}</h1><p>Your wallet, markets and AI-assisted trading workspace.</p></div>
-      {section === "Overview" && <><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Deposit")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">$0.00 <small>USD</small></strong><p>Connect an account to show verified balances. No funds are connected.</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
+      {section === "Overview" && <>
+        <div className="mobile-home">
+          <div className="mobile-home-header">
+            <button className="mobile-profile-mark" onClick={() => tell("Your Grandstone account and security settings.")} aria-label="Account">G</button>
+            <button className="mobile-search" onClick={() => setSection("Markets")}><Search size={20}/><span>Search markets and assets</span></button>
+            <button className="mobile-header-action" aria-label="Market tools" onClick={() => setSection("Markets")}><Activity size={23}/></button>
+            <button className="mobile-header-action" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated notification service.")}><Bell size={23}/></button>
+          </div>
+          <div className="mobile-category-row">
+            {["All","Stocks","Macro","Crypto","Earn"].map((item) => <button key={item} className={item === "All" ? "active" : ""} onClick={() => setSection(item === "All" ? "Overview" : item === "Crypto" ? "Assets" : item === "Earn" ? "Earn" : "Markets")}>{item}</button>)}
+            <button className="mobile-category-menu" onClick={() => setSection("More")} aria-label="More categories"><Menu size={23}/></button>
+          </div>
+          <div className="mobile-balance-panel">
+            <div className="mobile-balance-label">Total Assets <Eye size={16}/></div>
+            <div className="mobile-balance-row"><div className="mobile-balance-amount">$0.00 <small>USD</small></div><button onClick={() => setSection("Deposit")}>Deposit <ArrowDownLeft size={18}/></button></div>
+            <div className="mobile-pnl"><span>Today's P&amp;L</span><strong>— USD (—%)</strong></div>
+            <div className="mobile-balance-note">Your verified wallet balance will appear here.</div>
+          </div>
+          <div className="mobile-shortcuts">
+            <button onClick={() => setSection("Deposit")}><span><ArrowDownLeft/></span>Deposit</button>
+            <button onClick={() => setSection("Convert")}><span><ArrowLeftRight/></span>Convert</button>
+            <button onClick={() => setSection("Rewards Hub")}><span><Zap/></span>Rewards Hub</button>
+            <button onClick={() => setSection("Demo Trading")}><span><Wallet/></span>Demo Trading</button>
+            <button onClick={() => setSection("Earn")}><span><Coins/></span>Grandstone Earn</button>
+            <button onClick={() => setSection("More")}><span><Menu/></span>More</button>
+          </div>
+          <button className="mobile-promo-card" onClick={() => setSection("P2P")}><span className="mobile-promo-icon"><Coins size={28}/></span><span><small>GRANDSTONE WALLET</small><strong>Explore digital assets and markets</strong><em>Public market prices update automatically.</em></span><ChevronDown size={18}/></button>
+          <div className="mobile-market-heading"><h2>Market watch</h2><button onClick={() => setSection("Markets")}>View all <ChevronDown size={15}/></button></div>
+          <div className="mobile-market-grid">
+            {pairs.slice(0,4).map(market => {
+              const t = tickers.find(item => item.symbol === market);
+              const value = Number(t?.lastPrice || 0);
+              const pct = Number(t?.priceChangePercent || 0);
+              return <button key={market} onClick={() => {setPair(market);setPrice("");setSection("Trade");}}><strong>{market.replace("USDT","")} <ChevronDown size={13}/></strong><span>{t ? "$"+money(value,value < 1 ? 5 : 2) : "Loading price…"}</span><em className={pct >= 0 ? "up" : "down"}>{t ? (pct >= 0 ? "+" : "")+pct.toFixed(2)+"%" : "—"}</em></button>;
+            })}
+          </div>
+          <div className="mobile-market-tabs"><button onClick={() => setSection("Markets")}>Favorites</button><button className="active" onClick={() => setSection("Markets")}>Spot</button><button onClick={() => tell("Futures require a supported derivatives provider and risk controls.")}>Futures</button><button onClick={() => setSection("Assets")}>Crypto assets</button></div>
+        </div>
+        <div className="desktop-overview-content"><div className="overview-top-actions"><div className="overview-top-group"><button className="top-pill selected" onClick={() => setSection("Overview")}>All</button><button className="top-pill" onClick={() => setSection("Markets")}>Stocks</button><button className="top-pill" onClick={() => setSection("Markets")}>Macro</button><button className="top-pill" onClick={() => setSection("Assets")}>Crypto</button><button className="top-pill" onClick={() => setSection("Earn")}>Earn</button></div><div className="overview-top-group"><button className="top-pill" onClick={() => setSection("Deposit")}>Deposit</button><button className="top-pill" onClick={() => setSection("Convert")}>Convert</button><button className="top-pill" onClick={() => setSection("Rewards Hub")}>Reward Hub</button><button className="top-pill" onClick={() => setSection("Demo Trading")}>Demo Trading</button><button className="top-pill" onClick={() => setSection("Earn")}>Grandstone Earn</button><button className="top-pill" onClick={() => setSection("More")}>More</button></div></div><div className="overview-dashboard"><div className="feature-card overview-assets"><span>Total Assets</span><strong className="overview-total">$0.00 <small>USD</small></strong><p>Connect an account to show verified balances. No funds are connected.</p><div className="overview-pnl"><span>Today’s P&amp;L</span><strong>— USD (—%)</strong></div></div>
         <div className="feature-card" style={{gridColumn:"1 / -1"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
             <div><h2>Live market overview</h2><p>Prices refresh automatically from public market providers. These are market prices, not your wallet balances.</p></div>
@@ -188,7 +226,7 @@ function WalletDashboard() {
             })}
           </div>
           {marketError && <p role="status" style={{marginTop:10}}>Selected chart status: {marketError}</p>}
-        </div><h2>Explore tools</h2><div className="feature-grid"><div className="feature-card"><Bot/><h2>Trading bots</h2><p>Strategy workspace and risk controls.</p><button onClick={() => setSection("Trading bots")}>Open bots</button></div><div className="feature-card"><ShieldCheck/><h2>AI Trade Guardian</h2><p>Review risk before trade confirmation.</p><button onClick={() => setSection("AI Guardian")}>Open Guardian</button></div><div className="feature-card"><ShieldAlert/><h2>Scam Scanner</h2><p>Security analysis workspace.</p><button onClick={() => setSection("Scam Scanner")}>Open scanner</button></div></div></div></>}
+        </div><h2>Explore tools</h2><div className="feature-grid"><div className="feature-card"><Bot/><h2>Trading bots</h2><p>Strategy workspace and risk controls.</p><button onClick={() => setSection("Trading bots")}>Open bots</button></div><div className="feature-card"><ShieldCheck/><h2>AI Trade Guardian</h2><p>Review risk before trade confirmation.</p><button onClick={() => setSection("AI Guardian")}>Open Guardian</button></div><div className="feature-card"><ShieldAlert/><h2>Scam Scanner</h2><p>Security analysis workspace.</p><button onClick={() => setSection("Scam Scanner")}>Open scanner</button></div></div></div></div></>}
       {section === "Rewards Hub" && <div className="feature-grid"><div className="feature-card"><Zap/><h2>Rewards Hub</h2><p>Discover future campaigns, account missions and eligible platform rewards.</p><div className="bot-setting"><span><strong>Rewards status</strong><small>Rewards provider and account eligibility are not connected.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("No reward has been earned or claimed. A verified rewards service is not connected.")}>Check rewards status</button></div></div>}
       {section === "Demo Trading" && <div className="feature-grid"><div className="feature-card"><Activity/><h2>Demo Trading</h2><p>Practice trading should use simulated balances and paper orders only, separate from real funds.</p><div className="bot-setting"><span><strong>Paper-trading engine</strong><small>Simulation engine is not connected yet.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("Demo trading is not running yet. No paper or real order was placed.")}>Check demo status</button></div></div>}
       {section === "More" && <div className="feature-grid"><div className="feature-card more-tools-card"><Menu/><h2>All Grandstone tools</h2><p>Each option opens its own workspace. Features marked NOT LIVE need a provider connection before they can handle real funds or transactions.</p><div className="overview-shortcuts">
