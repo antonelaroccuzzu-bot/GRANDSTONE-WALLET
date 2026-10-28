@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import CustomerWallet from "./CustomerWallet";
 import CustomerGate from "./CustomerGate";
 import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, Eye, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
@@ -123,7 +122,7 @@ function WalletDashboard() {
     <header className="exchange-topbar">
       <button className="exchange-brand" onClick={() => setSection("Overview")}><span className="brand-mark"><Coins size={21}/></span><span>GRANDSTONE<small>WALLET & EXCHANGE</small></span></button>
       <nav className="desktop-nav">{nav.map(n => <button key={n.label} className={section === n.label ? "nav-item active" : "nav-item"} onClick={() => setSection(n.label)}>{n.label}</button>)}</nav>
-      <div className="header-tools"><span className={live ? "feed-status online" : "feed-status"}><i/>{live ? "Live market" : "Market offline"}</span><button className="header-icon" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated account.")}><Bell size={18}/></button><CustomerWallet /><button className="connect-button" onClick={() => setSection("Deposit")}><ArrowDownLeft size={16}/> Deposit</button><button className="mobile-menu-button" aria-label="Menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu/></button></div>
+      <div className="header-tools"><span className={live ? "feed-status online" : "feed-status"}><i/>{live ? "Live market" : "Market offline"}</span><button className="header-icon" aria-label="Notifications" onClick={() => tell("Notifications require an authenticated account.")}><Bell size={18}/></button><button className="mobile-menu-button" aria-label="Menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu/></button></div>
     </header>
     {mobileMenu && <nav className="mobile-nav">{nav.map(n => <button key={n.label} onClick={() => {setSection(n.label);setMobileMenu(false);}}>{n.label}</button>)}</nav>}
     {notice && <div className="exchange-notice" role="status"><ShieldAlert size={18}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss"><X size={16}/></button></div>}
