@@ -199,3 +199,12 @@ button,.order-input,input,select{font-weight:700}
  .mobile-market-tabs button{flex:0 0 auto;border:0;background:transparent;color:#87928b;font-size:13px;font-weight:750}
  .mobile-market-tabs button.active{color:#6dffb8}
 }
+
+
+@media(max-width:760px){
+ .mobile-bottom-nav{position:fixed;z-index:50;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:10px 7px calc(10px + env(safe-area-inset-bottom));border:1px solid rgba(32,245,155,.15);border-bottom:0;border-radius:24px 24px 0 0;background:rgba(5,9,7,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -10px 35px rgba(0,0,0,.35)}
+ .mobile-bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#78847d;font-size:10px;font-weight:700;padding:3px 0}
+ .mobile-bottom-nav button svg{width:23px;height:23px;stroke-width:2}
+ .mobile-bottom-nav button.active{color:#eafff3}
+ .mobile-bottom-nav button.active svg{color:#6dffb8}
+}
