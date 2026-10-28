@@ -82,3 +82,66 @@ body,.exchange-app{background:radial-gradient(ellipse at 15% 0%,rgba(0,214,112,.
 .overview-total{font-weight:900!important}.overview-shortcuts button strong{font-size:15px!important}.overview-shortcuts button small{font-size:12px!important;font-weight:600}
 button,.order-input,input,select{font-weight:700}
 @media(max-width:760px){.pair-title{font-size:12px!important}.ticker-stat strong{font-size:14px!important}.overview-shortcuts button strong{font-size:14px!important}}
+
+
+/* User-requested readability pass: make the full wallet interior and Overview larger and bolder. */
+.exchange-app{font-size:15px}
+.exchange-app .exchange-notice,
+.exchange-app .feature-title p,
+.exchange-app .feature-card p,
+.exchange-app .overview-assets>p,
+.exchange-app .overview-pnl,
+.exchange-app .overview-tabs button,
+.exchange-app .overview-shortcuts button small,
+.exchange-app .top-pill,
+.exchange-app .deposit-panel,
+.exchange-app .wallet-panel,
+.exchange-app .trade-panel{font-size:14px;font-weight:700}
+.exchange-app .overview-dashboard>h2{font-size:24px;font-weight:900}
+.exchange-app .overview-total{font-size:46px;font-weight:900}
+.exchange-app .overview-total small{font-size:15px;font-weight:800}
+.exchange-app .overview-assets>p{font-size:15px;font-weight:700}
+.exchange-app .overview-pnl{font-size:15px;font-weight:800}
+.exchange-app .overview-pnl strong{font-size:17px;font-weight:900}
+.exchange-app .overview-tabs button{font-size:14px;font-weight:800;padding:11px 17px}
+.exchange-app .overview-shortcuts button{padding:22px}
+.exchange-app .overview-shortcuts button strong{font-size:17px;font-weight:900}
+.exchange-app .overview-shortcuts button small{font-size:13px;font-weight:700}
+.exchange-app .feature-title h1{font-size:34px;font-weight:900}
+.exchange-app .feature-card h2{font-size:19px;font-weight:900}
+.exchange-app .feature-card p{font-size:14px;font-weight:650}
+.exchange-app .field-label,
+.exchange-app .order-card-title h2,
+.exchange-app .orderbook-head h2,
+.exchange-app .order-mode button,
+.exchange-app .order-type button,
+.exchange-app .order-summary,
+.exchange-app .available-balance,
+.exchange-app .submit-order,
+.exchange-app .deposit-panel label,
+.exchange-app .wallet-panel label{font-size:13px;font-weight:800}
+.exchange-app .order-input input{font-size:14px;font-weight:700}
+.exchange-app .order-summary strong{font-size:15px;font-weight:900}
+.exchange-app .order-warning{font-size:12px;font-weight:700}
+.exchange-app .pair-title h1{font-size:20px;font-weight:900}
+.exchange-app .ticker-stat small{font-size:12px;font-weight:750}
+.exchange-app .ticker-stat strong{font-size:16px;font-weight:900}
+.exchange-app .chart-tabs button,
+.exchange-app .intervals button,
+.exchange-app .trade-tabs button{font-size:12px;font-weight:800}
+.exchange-app .empty-orders strong{font-size:14px;font-weight:900}
+.exchange-app .empty-orders span{font-size:12px;font-weight:650}
+@media(max-width:760px){
+ .exchange-app .overview-dashboard{padding:18px 14px}
+ .exchange-app .overview-dashboard>h2{font-size:22px}
+ .exchange-app .overview-total{font-size:38px}
+ .exchange-app .overview-assets>p,.exchange-app .overview-pnl{font-size:14px}
+ .exchange-app .overview-shortcuts button{padding:16px}
+ .exchange-app .overview-shortcuts button strong{font-size:15px}
+ .exchange-app .overview-shortcuts button small{font-size:12px}
+ .exchange-app .feature-title h1{font-size:29px}
+ .exchange-app .pair-title h1{font-size:18px}
+ .exchange-app .ticker-stat small{font-size:11px}
+ .exchange-app .ticker-stat strong{font-size:14px}
+ .exchange-app .field-label,.exchange-app .order-card-title h2,.exchange-app .orderbook-head h2{font-size:13px}
+}
