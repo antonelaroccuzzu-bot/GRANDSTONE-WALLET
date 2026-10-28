@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "").trim();
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const base = url.replace(/\\/$/, "");
+    const base = url.replace(/\/$/, "");
     const response = await fetch(`${base}/rest/v1/wallet_accounts?select=id,asset,network,available_balance,locked_balance,updated_at&order=asset.asc`, {
       headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       balances: Array.isArray(rows) ? rows : [],
       ledgerReady: true,
-      note: "Balances are read from the server-protected ledger. Deposits are not credited until a verified chain monitor is configured."
+      note: "Balances are read from the account ledger. Deposits are not credited until a verified chain monitor is configured."
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Wallet balance service is temporarily unavailable." }, { status: 502 });
