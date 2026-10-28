@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CustomerWallet from "./CustomerWallet";
 import CustomerGate from "./CustomerGate";
-import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, Eye, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
 type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
 type Candle = [number, string, string, string, string, string, number, string, number, string, string, string];
