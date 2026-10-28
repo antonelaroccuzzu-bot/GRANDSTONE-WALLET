@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CustomerGate from "./CustomerGate";
+import { supabase } from "../lib/supabase/client";
 import { Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, Bot, CandlestickChart, ChevronDown, Clock3, Coins, Eye, LayoutDashboard, Menu, Search, Settings, ShieldAlert, ShieldCheck, Wallet, X, Zap } from "lucide-react";
 
 type Ticker = { symbol: string; lastPrice: string; priceChangePercent: string; quoteVolume: string; highPrice: string; lowPrice: string };
@@ -30,8 +31,34 @@ function WalletDashboard() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [guardianEnabled, setGuardianEnabled] = useState(true);
   // Wallet connection state only; the app never requests seed phrases or private keys.
-  const [depositCoin, setDepositCoin] = useState("BTC");
-  const [depositNetwork, setDepositNetwork] = useState("Bitcoin");
+  const [depositCoin, setDepositCoin] = useState("ETH");
+  const [depositNetwork, setDepositNetwork] = useState("Ethereum (ERC-20)");
+  const [depositAddress, setDepositAddress] = useState("");
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositError, setDepositError] = useState("");
+  async function generateDepositAddress() {
+    if (!supabase) { setDepositError("Grandstone account service is not configured."); return; }
+    setDepositLoading(true);
+    setDepositError("");
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Your sign-in session expired. Sign in again to continue.");
+      const response = await fetch("/api/deposit-address", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Could not create a deposit wallet.");
+      if (typeof data.address !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(data.address)) throw new Error("The wallet provider did not return a valid EVM address.");
+      setDepositAddress(data.address);
+    } catch (error) {
+      setDepositError(error instanceof Error ? error.message : "Deposit wallet setup failed.");
+    } finally { setDepositLoading(false); }
+  }
+
   const activeTicker = tickers.find(t => t.symbol === pair);
   const last = Number(activeTicker?.lastPrice || 0);
   const change = Number(activeTicker?.priceChangePercent || 0);
@@ -271,12 +298,14 @@ function WalletDashboard() {
           </div>
         </div><div className="feature-card"><ShieldCheck/><h2>Grandstone wallet infrastructure</h2><p>Grandstone will issue its own deposit addresses per customer and supported network. Addresses must be generated and stored by a secure custody/key-management service, not fabricated in the browser.</p><div className="bot-setting"><span><strong>Deposit wallet service</strong><small>Secure address generation and deposit monitoring are not configured yet.</small></span><span className="disabled-badge">NOT LIVE</span></div></div></div>}
       {section === "Deposit" && <div className="feature-grid"><div className="feature-card" style={{gridColumn:"1 / -1"}}>
-        <div className="feature-title"><span className="eyebrow">GRANDSTONE WALLET</span><h1>Deposit crypto</h1><p>Select the coin and its network. Your Grandstone deposit address should remain assigned to your account for future deposits.</p></div>
-        <label className="field-label">Select cryptocurrency<select value={depositCoin} onChange={e => {setDepositCoin(e.target.value);setDepositNetwork(({BTC:"Bitcoin",ETH:"Ethereum (ERC-20)",SOL:"Solana",BNB:"BNB Smart Chain (BEP-20)",XRP:"XRP Ledger",DOGE:"Dogecoin",ADA:"Cardano",AVAX:"Avalanche C-Chain",TRX:"TRON (TRC-20)",LTC:"Litecoin"} as Record<string,string>)[e.target.value] || "Select network");}} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{["BTC","ETH","SOL","BNB","XRP","DOGE","ADA","AVAX","TRX","LTC","USDT","USDC"].map(coin => <option key={coin} value={coin}>{coin}</option>)}</select></label>
-        <label className="field-label" style={{display:"block",marginTop:14}}>Network<select value={depositNetwork} onChange={e => setDepositNetwork(e.target.value)} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{(({BTC:["Bitcoin"],ETH:["Ethereum (ERC-20)","Arbitrum","Optimism","Base"],SOL:["Solana"],BNB:["BNB Smart Chain (BEP-20)","BNB Beacon Chain"],XRP:["XRP Ledger"],DOGE:["Dogecoin"],ADA:["Cardano"],AVAX:["Avalanche C-Chain"],TRX:["TRON (TRC-20)"],LTC:["Litecoin"],USDT:["Ethereum (ERC-20)","Tron (TRC-20)","Solana","BNB Smart Chain (BEP-20)"],USDC:["Ethereum (ERC-20)","Solana","Base","Arbitrum"]} as Record<string,string[]>)[depositCoin] || ["Select network"]).map(network => <option key={network} value={network}>{network}</option>)}</select></label>
-        <div className="bot-setting" style={{marginTop:18}}><span><strong>Deposit address</strong><small>Address not generated yet</small></span><span className="disabled-badge">SETUP REQUIRED</span></div>
-        <p style={{marginTop:12}}>Your permanent {depositCoin} deposit address will appear here once Grandstone's secure wallet-generation and deposit-monitoring backend is configured. Do not send funds to a placeholder address or use an address from another network.</p>
-        <button onClick={() => tell("No deposit address has been generated and no funds can be received yet. Grandstone needs its secure custody wallet service configured first.")}>Check deposit setup</button>
+        <div className="feature-title"><span className="eyebrow">GRANDSTONE WALLET</span><h1>Deposit crypto</h1><p>Create or retrieve your permanent Grandstone EVM wallet address. The same address is reused for your account.</p></div>
+        <label className="field-label">Select cryptocurrency<select value={depositCoin} onChange={e => {setDepositCoin(e.target.value);setDepositAddress("");setDepositNetwork(e.target.value === "BNB" ? "BNB Smart Chain (BEP-20)" : "Ethereum (ERC-20)");}} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{["ETH","USDT","USDC","BNB"].map(coin => <option key={coin} value={coin}>{coin}</option>)}</select></label>
+        <label className="field-label" style={{display:"block",marginTop:14}}>Network<select value={depositNetwork} onChange={e => setDepositNetwork(e.target.value)} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{(depositCoin === "BNB" ? ["BNB Smart Chain (BEP-20)"] : ["Ethereum (ERC-20)","Arbitrum","Optimism","Base","Polygon"]).map(network => <option key={network} value={network}>{network}</option>)}</select></label>
+        <div className="bot-setting" style={{marginTop:18}}><span><strong>Deposit address</strong><small>{depositAddress ? "Permanent address assigned to your account" : "No address loaded yet"}</small></span><span className="disabled-badge">{depositAddress ? "ADDRESS READY" : "NOT LOADED"}</span></div>
+        {depositAddress && <div style={{marginTop:12,padding:14,borderRadius:12,background:"#071b12",border:"1px solid rgba(32,245,155,.35)",overflowWrap:"anywhere"}}><code style={{fontSize:13,color:"#6dffb8",wordBreak:"break-all"}}>{depositAddress}</code><button style={{display:"block",marginTop:12}} onClick={() => { void navigator.clipboard.writeText(depositAddress).then(() => tell("Deposit address copied."), () => tell("Select and copy the address manually.")); }}>Copy address</button></div>}
+        {depositError && <p role="alert" style={{marginTop:12,color:"#ff9b9b"}}>{depositError}</p>}
+        <p style={{marginTop:12}}>Important: this is a persistent EVM wallet address generated by Privy. Deposit monitoring and automatic balance crediting are not connected yet, so do not send funds until Grandstone confirms monitoring is active. Only use the selected EVM network.</p>
+        <button disabled={depositLoading} onClick={() => void generateDepositAddress()}>{depositLoading ? "Preparing secure wallet…" : depositAddress ? "Refresh saved address" : "Generate deposit address"}</button>
       </div></div>}
       {section === "AI Guardian" && <div className="feature-card"><ShieldCheck/><h2>Grandstone AI Trade Guardian</h2><p>Review volatility, order size, concentration, suspicious assets and your strategy rules before confirmation.</p><div className="bot-setting"><span><strong>Pre-trade review</strong><small>Risk rules must be enforced server-side before live orders.</small></span><button className={guardianEnabled ? "toggle on" : "toggle"} onClick={() => setGuardianEnabled(!guardianEnabled)}><i/></button></div><div className="guardian-rule"><ShieldAlert size={18}/><span>When a trade appears risky, Guardian should show the reason and require your Yes/No decision. Hard security and compliance blocks cannot be overridden.</span></div></div>}
       {section === "Trading bots" && <div className="feature-grid"><div className="feature-card"><Bot/><h2>Strategy bot workspace</h2><p>Plan grid, DCA and rule-based strategies with entry conditions, position sizing, take-profit, stop-loss and max-daily-loss limits.</p><div className="bot-setting"><span><strong>Backtesting & paper trading</strong><small>Simulation UI planned; verified historical-data engine not connected.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("Bot execution is disabled until a supported exchange account, server-side risk checks and user authorization are integrated.")}>Review execution status</button></div><div className="feature-card"><Activity/><h2>Risk controls</h2><p>Set per-strategy exposure caps, cooldowns, daily loss limits and Guardian approval before live execution.</p><div className="guardian-rule"><ShieldAlert size={18}/><span>No bot should place real orders until secure provider integration and risk checks pass.</span></div></div></div>}
