@@ -39,13 +39,48 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // MFA verification is temporarily disabled, but email/password
-    // authentication remains required before the dashboard is shown.
-    setFactorsReady(true);
-    setVerified(Boolean(user));
-    setSetup(null);
-    setChallenge(null);
-    setMessage("");
+    let alive = true;
+    async function prepareMfa() {
+      setFactorsReady(false);
+      setVerified(false);
+      setSetup(null);
+      setChallenge(null);
+      setMessage("");
+      if (!user || !supabase) {
+        setFactorsReady(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.auth.mfa.listFactors();
+        if (error) throw error;
+        if (!alive) return;
+        const verifiedFactor = data.totp?.find(factor => factor.status === "verified");
+        if (verifiedFactor) {
+          setChallenge({ factorId: verifiedFactor.id, challengeId: "" });
+        } else {
+          // An enrolled, verified factor remains attached to this account
+          // and is reused for every future sign-in.
+          const pendingFactor = data.totp?.find(factor => factor.status === "unverified");
+          if (pendingFactor) {
+            const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: pendingFactor.id });
+            if (removeError) throw removeError;
+          }
+          const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
+            factorType: "totp",
+            friendlyName: "Grandstone Wallet"
+          });
+          if (enrollError) throw enrollError;
+          if (!alive) return;
+          setSetup({ id: enrolled.id, qr: enrolled.totp.qr_code, secret: enrolled.totp.secret });
+        }
+      } catch (error) {
+        if (alive) setMessage(error instanceof Error ? error.message : "Could not prepare account authentication.");
+      } finally {
+        if (alive) setFactorsReady(true);
+      }
+    }
+    prepareMfa();
+    return () => { alive = false; };
   }, [user?.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -58,10 +93,10 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
         if (error) throw error;
         if (data.session && data.user) {
           setUser(data.user);
-          setMessage("Account created. Next, set up your authenticator.");
+          setMessage("Account created. Secure your wallet with your authenticator.");
         } else {
           setRegistering(false);
-          setMessage("Check your email to confirm your account, then sign in to set up your authenticator.");
+          setMessage("Check your email to confirm your account, then sign in to secure your wallet.");
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -130,7 +165,7 @@ export default function CustomerGate({ children }: { children: ReactNode }) {
       </form>
       <button type="button" onClick={()=>{setRegistering(v=>!v);setMessage("");}} style={switchButton}>{registering?"Already have an account? Sign in":"New to Grandstone? Create an account"}</button>
       {message && <p role="status" style={messageStyle}>{message}</p>}
-      <p style={finePrint}>Account security is required. After email/password, you’ll set up an authenticator app that generates a one-time code.</p>
+      <p style={finePrint}>Your authenticator is linked to your account after setup. Use the same authenticator for future sign-ins; do not delete its entry.</p>
       <CreatorInfo/>
     </section>
   </main>;
