@@ -39,6 +39,45 @@ function WalletDashboard() {
   const [depositAddress, setDepositAddress] = useState("");
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositError, setDepositError] = useState("");
+  const [aiInput, setAiInput] = useState("");
+  const [aiMessages, setAiMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<"assistant" | "signals">("assistant");
+  async function sendAiMessage(promptOverride?: string) {
+    const prompt = (promptOverride ?? aiInput).trim();
+    if (!prompt || aiLoading) return;
+    if (!supabase) { tell("Grandstone account service is not configured."); return; }
+    const nextMessages = [...aiMessages, { role: "user" as const, content: prompt }];
+    setAiMessages(nextMessages);
+    setAiInput("");
+    setAiLoading(true);
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sign in again to use Grandstone AI.");
+      const context = aiMode === "signals"
+        ? "Analyze the current public market data for " + pair + ". Latest observed price: " + (activeTicker?.lastPrice || "unavailable") + " USDT; 24-hour change: " + (activeTicker?.priceChangePercent || "unavailable") + "%. Explain possible bullish and bearish scenarios, key uncertainties, and risk controls. This is educational analysis, not a guaranteed prediction."
+        : prompt;
+      const messages = aiMode === "signals"
+        ? [...nextMessages.slice(0, -1), { role: "user" as const, content: context + "\nUser question: " + prompt }]
+        : nextMessages;
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+        cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Grandstone AI request failed. Check the AI provider setup.");
+      if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("AI provider returned an empty reply.");
+      setAiMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Grandstone AI is unavailable.";
+      setAiMessages([...nextMessages, { role: "assistant", content: "I couldn't complete that request: " + message }]);
+    } finally { setAiLoading(false); }
+  }
+
   async function generateDepositAddress() {
     if (!supabase) { setDepositError("Grandstone account service is not configured."); return; }
     setDepositLoading(true);
@@ -354,7 +393,7 @@ function WalletDashboard() {
       </div></div>}
       {section === "AI Guardian" && <div className="feature-card"><ShieldCheck/><h2>Grandstone AI Trade Guardian</h2><p>Review volatility, order size, concentration, suspicious assets and your strategy rules before confirmation.</p><div className="bot-setting"><span><strong>Pre-trade review</strong><small>Risk rules must be enforced server-side before live orders.</small></span><button className={guardianEnabled ? "toggle on" : "toggle"} onClick={() => setGuardianEnabled(!guardianEnabled)}><i/></button></div><div className="guardian-rule"><ShieldAlert size={18}/><span>When a trade appears risky, Guardian should show the reason and require your Yes/No decision. Hard security and compliance blocks cannot be overridden.</span></div></div>}
       {section === "Trading bots" && <div className="feature-grid"><div className="feature-card"><Bot/><h2>Strategy bot workspace</h2><p>Plan grid, DCA and rule-based strategies with entry conditions, position sizing, take-profit, stop-loss and max-daily-loss limits.</p><div className="bot-setting"><span><strong>Backtesting & paper trading</strong><small>Simulation UI planned; verified historical-data engine not connected.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("Bot execution is disabled until a supported exchange account, server-side risk checks and user authorization are integrated.")}>Review execution status</button></div><div className="feature-card"><Activity/><h2>Risk controls</h2><p>Set per-strategy exposure caps, cooldowns, daily loss limits and Guardian approval before live execution.</p><div className="guardian-rule"><ShieldAlert size={18}/><span>No bot should place real orders until secure provider integration and risk checks pass.</span></div></div></div>}
-      {section === "AI Assistant" && <div className="feature-grid"><div className="feature-card"><Zap/><h2>Grandstone AI Assistant</h2><p>Designed to explain market movements, compare assets, summarize your portfolio and help you understand trading concepts.</p><button onClick={() => tell("The AI assistant needs its server-side model endpoint and authenticated user context connected before it can answer from live account data.")}>Check AI connection</button></div><div className="feature-card"><ShieldCheck/><h2>Trade explanations</h2><p>AI guidance should explain assumptions and risks. It must not promise returns or execute trades without explicit authorization.</p></div></div>}
+      {section === "AI Assistant" && <div className="feature-grid"><div className="feature-card ai-chat-card"><Zap/><h2>Grandstone AI</h2><p>Authenticated AI chat and market-scenario analysis. AI does not place trades or guarantee returns.</p><div className="overview-shortcuts"><button className={aiMode === "assistant" ? "active" : ""} onClick={() => setAiMode("assistant")}>AI Assistant</button><button className={aiMode === "signals" ? "active" : ""} onClick={() => setAiMode("signals")}>Market Signals</button></div><div className="ai-message-list" aria-live="polite">{aiMessages.length === 0 && <p>Ask a market question or request a risk-aware scenario analysis for the selected pair.</p>}{aiMessages.map((m, i) => <div key={i} className={"ai-message " + m.role}><strong>{m.role === "user" ? "You" : "Grandstone AI"}</strong><p>{m.content}</p></div>)}</div><form onSubmit={(event) => { event.preventDefault(); void sendAiMessage(); }}><label className="field-label">Your question<textarea className="scanner-input" rows={3} maxLength={4000} value={aiInput} onChange={(event) => setAiInput(event.target.value)} placeholder={aiMode === "signals" ? "Explain bullish and bearish scenarios for this pair…" : "Ask Grandstone AI…"} /></label><button type="submit" disabled={aiLoading || !aiInput.trim()}>{aiLoading ? "Thinking…" : aiMode === "signals" ? "Analyze market" : "Send to AI"}</button></form><small>Requires the server-side OPENROUTER_API_KEY environment variable. Never enter passwords, seed phrases or private keys.</small></div><div className="feature-card"><ShieldCheck/><h2>Trade explanations</h2><p>AI guidance explains assumptions and risks. It does not promise returns or execute trades.</p><div className="bot-setting"><span><strong>Market context</strong><small>Selected pair: {pair}; public feed: {live ? "connected" : "not confirmed"}.</small></span></div><button onClick={() => { setAiMode("signals"); setAiInput("Give me a balanced risk review for the selected market."); }}>Prepare risk review</button></div></div>}
       {section === "Scam Scanner" && <div className="feature-grid"><div className="feature-card"><ShieldAlert/><h2>Crypto scam scanner</h2><p>Planned checks: suspicious token and contract signals, malicious URLs, impersonation, wallet-drainer warnings and known-risk indicators.</p><label className="field-label">Token contract or website URL<input className="scanner-input" placeholder="Paste a public contract address or URL"/></label><button onClick={() => tell("Scam scanning is not connected to a verified threat-intelligence provider yet. Do not treat this screen as a security verdict.")}>Check scanner connection</button></div><div className="feature-card"><ShieldCheck/><h2>Safety first</h2><p>A scan must show sources, confidence and limitations. Never enter a seed phrase or private key into a scanner.</p></div></div>}
       {section === "Portfolio Manager" && <div className="feature-grid"><div className="feature-card"><Activity/><h2>AI portfolio manager</h2><p>Planned analysis includes allocation, concentration, volatility, drawdown, asset correlations and risk-aware rebalancing suggestions.</p><button onClick={() => tell("Portfolio analysis needs verified connected balances and a configured analysis service.")}>Check portfolio connection</button></div><div className="feature-card"><Wallet/><h2>Connected assets</h2><p>No balances are shown until a wallet or exchange account is securely connected and verified.</p></div></div>}
       {section === "Transaction Intelligence" && <div className="feature-grid"><div className="feature-card"><Search/><h2>Transaction intelligence</h2><p>Designed to explain transaction status, network fees, confirmations, token approvals and unusual transfer patterns.</p><button onClick={() => tell("Blockchain explorer and risk-data integrations are not connected yet.")}>Check data connections</button></div><div className="feature-card"><ShieldAlert/><h2>Address risk</h2><p>Risk signals should be sourced and explained before you sign or send funds.</p></div></div>}
