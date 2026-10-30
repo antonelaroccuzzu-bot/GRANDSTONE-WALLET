@@ -90,12 +90,20 @@ function WalletDashboard() {
       const response = await fetch("/api/deposit-address", {
         method: "POST",
         headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ asset: depositCoin }),
         cache: "no-store"
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Could not create a deposit wallet.");
-      if (typeof data.address !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(data.address)) throw new Error("The wallet provider did not return a valid EVM address.");
+      if (typeof data.address !== "string" || typeof data.network !== "string") throw new Error("The wallet provider did not return a valid address and network.");
+      const valid = depositCoin === "BTC" ? /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/.test(data.address)
+        : depositCoin === "SOL" ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(data.address)
+        : depositCoin === "TRX" ? /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(data.address)
+        : depositCoin === "TON" ? /^(EQ|UQ)[A-Za-z0-9_-]{40,}$/.test(data.address)
+        : /^0x[a-fA-F0-9]{40}$/.test(data.address);
+      if (!valid) throw new Error("The wallet provider returned an address that does not match the selected network.");
       setDepositAddress(data.address);
+      setDepositNetwork(data.network);
     } catch (error) {
       setDepositError(error instanceof Error ? error.message : "Deposit wallet setup failed.");
     } finally { setDepositLoading(false); }
@@ -382,14 +390,14 @@ function WalletDashboard() {
           </div>
         </div><div className="feature-card"><ShieldCheck/><h2>Grandstone wallet infrastructure</h2><p>Grandstone now requests persistent EVM wallet addresses from Privy for signed-in accounts. Address generation is separate from transaction monitoring and account balance updates.</p><div className="bot-setting"><span><strong>Wallet address generation</strong><small>Privy EVM wallet creation is connected in code. Deposit monitoring and automatic balance crediting still need setup.</small></span><span className="disabled-badge">PARTIAL</span></div></div></div>}
       {section === "Deposit" && <div className="feature-grid"><div className="feature-card" style={{gridColumn:"1 / -1"}}>
-        <div className="feature-title"><span className="eyebrow">GRANDSTONE WALLET</span><h1>Deposit crypto</h1><p>Ethereum network deposits only. ETH, USDT (ERC-20) and USDC (ERC-20) use the same Ethereum address for your account.</p></div>
-        <label className="field-label">Select cryptocurrency<select value={depositCoin} onChange={e => {setDepositCoin(e.target.value);setDepositAddress("");setDepositNetwork("Ethereum (ERC-20)");}} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{["ETH","USDT","USDC"].map(coin => <option key={coin} value={coin}>{coin}</option>)}</select></label>
-        <div className="bot-setting" style={{marginTop:14}}><span><strong>Network</strong><small>Ethereum (ERC-20) only</small></span><span className="disabled-badge">SUPPORTED</span></div>
-        <div className="bot-setting" style={{marginTop:18}}><span><strong>Deposit address</strong><small>{depositAddress ? "Your account's Ethereum address" : "No address loaded yet"}</small></span><span className="disabled-badge">{depositAddress ? "ADDRESS READY" : "NOT LOADED"}</span></div>
+        <div className="feature-title"><span className="eyebrow">GRANDSTONE WALLET</span><h1>Deposit crypto</h1><p>Each supported asset gets its own provider-generated wallet record and network address. Market listing does not mean deposits are enabled.</p></div>
+        <label className="field-label">Select cryptocurrency<select value={depositCoin} onChange={e => {setDepositCoin(e.target.value);setDepositAddress("");setDepositError("");setDepositNetwork("");}} style={{display:"block",width:"100%",marginTop:8,padding:12,borderRadius:10}}>{["BTC","ETH","SOL","BNB","AVAX","LINK","TRX","SUI","TON","SHIB","PEPE","NEAR","APT","ETC","USDT","USDC"].map(coin => <option key={coin} value={coin}>{coin}</option>)}</select></label>
+        <div className="bot-setting" style={{marginTop:14}}><span><strong>Network</strong><small>{depositNetwork || "Will be confirmed by the wallet provider"}</small></span><span className="disabled-badge">{depositNetwork ? "PROVIDER CONFIRMED" : "NOT LOADED"}</span></div>
+        <div className="bot-setting" style={{marginTop:18}}><span><strong>Deposit address</strong><small>{depositAddress ? "Unique wallet record for " + depositCoin : "No address loaded yet"}</small></span><span className="disabled-badge">{depositAddress ? "ADDRESS READY" : "NOT LOADED"}</span></div>
         {depositAddress && <div style={{marginTop:12,padding:14,borderRadius:12,background:"#071b12",border:"1px solid rgba(32,245,155,.35)",overflowWrap:"anywhere"}}><code style={{fontSize:13,color:"#6dffb8",wordBreak:"break-all"}}>{depositAddress}</code><button style={{display:"block",marginTop:12}} onClick={() => { void navigator.clipboard.writeText(depositAddress).then(() => tell("Deposit address copied."), () => tell("Select and copy the address manually.")); }}>Copy address</button></div>}
         {depositError && <p role="alert" style={{marginTop:12,color:"#ff9b9b"}}>{depositError}</p>}
-        <p style={{marginTop:12}}>Bitcoin (BTC) and other non-Ethereum networks need separate wallet integrations and are not deposit-enabled yet. Do not send funds until Grandstone's Ethereum deposit monitoring and automatic balance crediting are active. Never send BTC to this 0x address.</p>
-        <button disabled={depositLoading} onClick={() => void generateDepositAddress()}>{depositLoading ? "Preparing secure wallet…" : depositAddress ? "Refresh saved address" : "Generate Ethereum address"}</button>
+        <p style={{marginTop:12}}>Important: wallet-address generation alone does not detect deposits or credit your Grandstone balance. Do not send funds until blockchain monitoring, required confirmations, duplicate-transaction protection and automatic ledger crediting are live and tested.</p>
+        <button disabled={depositLoading} onClick={() => void generateDepositAddress()}>{depositLoading ? "Preparing secure wallet…" : depositAddress ? "Load " + depositCoin + " address again" : "Generate " + depositCoin + " address"}</button>
       </div></div>}
       {section === "AI Guardian" && <div className="feature-card"><ShieldCheck/><h2>Grandstone AI Trade Guardian</h2><p>Review volatility, order size, concentration, suspicious assets and your strategy rules before confirmation.</p><div className="bot-setting"><span><strong>Pre-trade review</strong><small>Risk rules must be enforced server-side before live orders.</small></span><button className={guardianEnabled ? "toggle on" : "toggle"} onClick={() => setGuardianEnabled(!guardianEnabled)}><i/></button></div><div className="guardian-rule"><ShieldAlert size={18}/><span>When a trade appears risky, Guardian should show the reason and require your Yes/No decision. Hard security and compliance blocks cannot be overridden.</span></div></div>}
       {section === "Trading bots" && <div className="feature-grid"><div className="feature-card"><Bot/><h2>Strategy bot workspace</h2><p>Plan grid, DCA and rule-based strategies with entry conditions, position sizing, take-profit, stop-loss and max-daily-loss limits.</p><div className="bot-setting"><span><strong>Backtesting & paper trading</strong><small>Simulation UI planned; verified historical-data engine not connected.</small></span><span className="disabled-badge">NOT LIVE</span></div><button onClick={() => tell("Bot execution is disabled until a supported exchange account, server-side risk checks and user authorization are integrated.")}>Review execution status</button></div><div className="feature-card"><Activity/><h2>Risk controls</h2><p>Set per-strategy exposure caps, cooldowns, daily loss limits and Guardian approval before live execution.</p><div className="guardian-rule"><ShieldAlert size={18}/><span>No bot should place real orders until secure provider integration and risk checks pass.</span></div></div></div>}
