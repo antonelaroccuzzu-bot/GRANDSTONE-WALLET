@@ -17,6 +17,17 @@ const DEPOSIT_ASSETS: Record<string, { network: string; chainType: string; addre
   USDC: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ }
 };
 
+async function persistDepositWallet(input: { walletId: string; userId: string; asset: string; network: string; address: string; chainType: string }) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) throw new Error("Deposit address registry is not configured. Add SUPABASE_SERVICE_ROLE_KEY in Vercel before creating deposit addresses.");
+  const response = await fetch(url.replace(/\/$/, "") + "/rest/v1/wallet_deposit_addresses?on_conflict=wallet_id", {
+    method: "POST", cache: "no-store", signal: AbortSignal.timeout(8000),
+    headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ wallet_id: input.walletId, user_id: input.userId, asset: input.asset, network: input.network, address: input.address, chain_type: input.chainType })
+  });
+  if (!response.ok) throw new Error("Could not securely register this deposit address. No address was displayed.");
+}
 function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -66,6 +77,7 @@ export async function POST(request: NextRequest) {
     if (existing.response.ok) {
       const wallet = existing.payload?.data ?? existing.payload;
       if (typeof wallet?.address === "string" && typeof wallet?.id === "string" && config.addressPattern.test(wallet.address)) {
+        await persistDepositWallet({ walletId: wallet.id, userId, asset, network: config.network, address: wallet.address, chainType: config.chainType });
         return NextResponse.json({ asset, network: config.network, address: wallet.address, walletId: wallet.id, chainType: config.chainType, reused: true });
       }
       return errorResponse("The existing provider wallet did not return an address matching the selected network. No address was displayed.", 502);
@@ -94,6 +106,7 @@ export async function POST(request: NextRequest) {
     if (typeof wallet?.address !== "string" || typeof wallet?.id !== "string" || !config.addressPattern.test(wallet.address)) {
       return errorResponse("The provider response did not match the selected network address format. No address was displayed.", 502);
     }
+    await persistDepositWallet({ walletId: wallet.id, userId, asset, network: config.network, address: wallet.address, chainType: config.chainType });
     return NextResponse.json({ asset, network: config.network, address: wallet.address, walletId: wallet.id, chainType: config.chainType, reused: false });
   } catch (error) {
     return errorResponse(error instanceof Error ? error.message : "Wallet service request failed.", 502);
