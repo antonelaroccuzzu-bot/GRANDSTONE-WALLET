@@ -4,19 +4,14 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const DEPOSIT_ASSETS: Record<string, { network: string; chainType: string; addressPattern: RegExp }> = {
-  BTC: { network: "Bitcoin (SegWit)", chainType: "bitcoin-segwit", addressPattern: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/ },
+  BTC: { network: "Bitcoin", chainType: "bitcoin", addressPattern: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/ },
   ETH: { network: "Ethereum", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   SOL: { network: "Solana", chainType: "solana", addressPattern: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ },
   BNB: { network: "BNB Smart Chain (BEP-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   AVAX: { network: "Avalanche C-Chain", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   LINK: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
-  TRX: { network: "TRON", chainType: "tron", addressPattern: /^T[1-9A-HJ-NP-Za-km-z]{33}$/ },
-  SUI: { network: "Sui", chainType: "sui", addressPattern: /^0x[a-fA-F0-9]{64}$/ },
-  TON: { network: "TON", chainType: "ton", addressPattern: /^(EQ|UQ)[A-Za-z0-9_-]{46,}$/ },
   SHIB: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   PEPE: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
-  NEAR: { network: "NEAR", chainType: "near", addressPattern: /^[a-z0-9_-]+\.(near|testnet)$/ },
-  APT: { network: "Aptos", chainType: "aptos", addressPattern: /^0x[a-fA-F0-9]{64}$/ },
   ETC: { network: "Ethereum Classic", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   USDT: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ },
   USDC: { network: "Ethereum (ERC-20)", chainType: "ethereum", addressPattern: /^0x[a-fA-F0-9]{40}$/ }
